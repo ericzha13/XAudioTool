@@ -4,8 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_win", "test_win.vcxproj", "{B630A0C9-BE05-4C46-A03F-C790DC4A8557}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F9C68C4A-9269-4F79-98B5-27014564AE97} = {F9C68C4A-9269-4F79-98B5-27014564AE97}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "..\..\src\Core\Core.vcxproj", "{F9C68C4A-9269-4F79-98B5-27014564AE97}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "..\..\Src\Core\Core.vcxproj", "{F9C68C4A-9269-4F79-98B5-27014564AE97}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
