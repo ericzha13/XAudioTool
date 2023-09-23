@@ -3,22 +3,51 @@
 
 #include <iostream>
 #include "TimeHelp.hpp"
+#include <gflags/gflags.h>
 
-int main()
+DEFINE_string(input_file, "", "Input file path");
+DEFINE_int32(iterations, 100, "Number of iterations");
+DEFINE_bool(verbose, false, "Enable verbose mode");
+
+#define STRIP_FLAG_HELP 1
+using GFLAGS_NAMESPACE::SetUsageMessage;
+using GFLAGS_NAMESPACE::ParseCommandLineFlags;
+int main(int argc, char** argv)
 {
-    std::cout << "start time now :" << get_format_time() << std::endl;
+    SetUsageMessage("Usage message");
+    ParseCommandLineFlags(&argc, &argv, false);
+    puts(argv[0]);
+
+    std::cout << "start time now :" << ast::utils::get_format_time() << std::endl;
     
     {
         std::cout << "Hello World!\n";
         scope_delay_ms(300);
+        
         long res = 0;
         for (int i = 0; i < 100; i++) {
             res += i;
         }
 
+        {
+            // Initialize gflags.
+            gflags::ParseCommandLineFlags(&argc, &argv, true);
+         
+            // Access command-line parameters.
+            std::string input_file = FLAGS_input_file;
+            int iterations = FLAGS_iterations;
+            bool verbose = FLAGS_verbose;
+         
+            // Print the parsed values.
+            std::cout << "Input File: " << input_file << std::endl;
+            std::cout << "Iterations: " << iterations << std::endl;
+            std::cout << "Verbose Mode: " << (verbose ? "true" : "false") << std::endl;
+
+        }
+
         std::cout << "res = " << res << std::endl;
     }
-    std::cout << "End time now :" << get_format_time() << std::endl;
+    std::cout << "End time now :" << ast::utils::get_format_time() << std::endl;
 
 }
 
