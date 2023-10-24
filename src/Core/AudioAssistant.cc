@@ -274,12 +274,12 @@ SplitAudio::SplitAudio(const fs::path files, const int chanel)
 		for (int i = 0; i < chanel; i++)
 		{
 			std::string m_tmp = ast::utils::create_format_directory<true>(files.parent_path(), "splitOut","spout"+std::to_string(i)+".pcm");
-			if (m_tmp != "") { m_audio_pool.emplace_back(m_tmp); }
+			if (m_tmp != "") { mv_audio_pool.emplace_back(m_tmp); }
 			else { std::cout << "some file open failed " << std::endl; }
 		}
 		
-		m_input_chanel = m_audio_pool.size();
-		if (ast::utils::open_files(m_audio_pool, v_ofs_handle) != 0) { throw "输出音频打开失败[SplitAudio::SplitAudio]"; }
+		m_input_chanel = mv_audio_pool.size();
+		if (ast::utils::open_files(mv_audio_pool, v_ofs_handle) != 0) { throw "输出音频打开失败[SplitAudio::SplitAudio]"; }
 		
 		//申请缓存
 		{
@@ -626,34 +626,21 @@ MergeAudio::MergeAudio(const fs::path working_path)
 	:m_default_output(working_path/"merge_output.pcm"),
 	m_num_of_material(0)
 {
-	if (!fs::is_directory(working_path)) {
-		throw "invalid input [MergeAudio::MergeAudio]";
+	if (!ast::utils::FindFilesWithExtension(working_path, ".pcm", mv_audio_pool)) {
+		LOG(WARNING) << "get_files_from_directory failed because of the input argu is not a folder";
 	}
-
-
-	if (!ast::utils::get_files_from_directory(working_path, ".pcm", m_audio_pool)) {
-		std::cout << "get_files_from_directory failed![MergeAudio::MergeAudio]" << std::endl;
-	}
-	m_num_of_material = m_audio_pool.size();
-}
-
-MergeAudio::MergeAudio()
-	:m_num_of_material(0)
-{
-	m_default_output = fs::current_path() / "merge_output.pcm";
-	
-	
+	m_num_of_material = mv_audio_pool.size();
 }
 
 
 void MergeAudio::refilter_by_extension(const std::string ext)
 {
 
-	std::remove_if(m_audio_pool.begin(), m_audio_pool.end(), [&](const fs::path& p) {
+	std::remove_if(mv_audio_pool.begin(), mv_audio_pool.end(), [&](const fs::path& p) {
 		return p.extension() != ext;
 		});
 
-	m_num_of_material = m_audio_pool.size();
+	m_num_of_material = mv_audio_pool.size();
 }
 
 bool MergeAudio::start_merge() {
@@ -663,7 +650,7 @@ bool MergeAudio::start_merge() {
 		cerr << "unsupported chanel[2~16], merge failed！" << endl;
 		return false;
 	}
-	else if (m_audio_pool.size() <= 1) {
+	else if (mv_audio_pool.size() <= 1) {
 		cerr << "no audio to merge!!" << endl;
 		return false;
 	}
@@ -688,7 +675,7 @@ bool MergeAudio::start_merge() {
 	//打开输入输出文件
 	{
 		OPEN_ONE_FILE(m_ofs, m_default_output);//打开输出文件
-		if (ast::utils::open_files(m_audio_pool, v_ifs_handle))//打开所有输入文件，若失败则关闭之前所有的文件
+		if (ast::utils::open_files(mv_audio_pool, v_ifs_handle))//打开所有输入文件，若失败则关闭之前所有的文件
 		{
 			std::cerr << "open input file failed,in[MergeAudio::start_merge()] " << std::endl;
 			return false;
@@ -751,7 +738,7 @@ void MergeAudio::deinit()
 	}
 	m_ofs.close();
 	v_ifs_handle.clear();
-	m_audio_pool.clear();
+	mv_audio_pool.clear();
 	m_num_of_material = 0;
 }
 

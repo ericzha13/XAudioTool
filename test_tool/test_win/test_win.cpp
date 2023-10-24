@@ -1,53 +1,66 @@
 ﻿// test_win.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
-
+#define GLOG_NO_ABBREVIATED_SEVERITIES 0
 #include <iostream>
 #include "TimeHelp.hpp"
 #include <gflags/gflags.h>
+#include <glog/logging.h>
+#include "AudioAssistant.h"
 
 DEFINE_string(input_file, "", "Input file path");
 DEFINE_int32(iterations, 100, "Number of iterations");
 DEFINE_bool(verbose, false, "Enable verbose mode");
 
-#define STRIP_FLAG_HELP 1
-using GFLAGS_NAMESPACE::SetUsageMessage;
-using GFLAGS_NAMESPACE::ParseCommandLineFlags;
+
+
 int main(int argc, char** argv)
 {
-    SetUsageMessage("Usage message");
-    ParseCommandLineFlags(&argc, &argv, false);
-    puts(argv[0]);
+    //puts(argv[0]);
 
-    std::cout << "start time now :" << ast::utils::get_format_time() << std::endl;
-    
+	google::InitGoogleLogging("AABB");
+
+	//google::SetLogDestination(google::GLOG_INFO,R"(D:\Var\Xaudio\agv_4)");
+	//google::SetLogFilenameExtension(".log");
+
+
+
+	FLAGS_v = 1;// no used
+	//FLAGS_logtostdout = true;
+	//FLAGS_alsologtostderr = true;
+	FLAGS_logtostderr = true;
+	// FLAGS_stderrthreshold = google::GLOG_WARNING;
+	FLAGS_colorlogtostdout = true;
+	FLAGS_colorlogtostderr = true;
+	//FLAGS_max_log_size = 3;
+	 //FLAGS_stop_logging_if_full_disk = true;
+
+
+
+	LOG(INFO) << "start time now :" << ast::utils::get_format_time();
     {
         std::cout << "Hello World!\n";
-        scope_delay_ms(300);
+        scope_delay_ms(1000);
+
+		
+		try
+		{
+			std::filesystem::path tt_folder = R"(C:\Users\ericzha\Music\TestData\vw_log_2023-04-28_09_44_49.649630_final0.pcm)";
+			MergeAudio aa(tt_folder);
+		}
+		catch (const std::exception& e)
+		{
+			LOG(ERROR) << "std::exception " << e.what();
+		}
+		
         
-        long res = 0;
-        for (int i = 0; i < 100; i++) {
-            res += i;
-        }
-
-        {
-            // Initialize gflags.
-            gflags::ParseCommandLineFlags(&argc, &argv, true);
-         
-            // Access command-line parameters.
-            std::string input_file = FLAGS_input_file;
-            int iterations = FLAGS_iterations;
-            bool verbose = FLAGS_verbose;
-         
-            // Print the parsed values.
-            std::cout << "Input File: " << input_file << std::endl;
-            std::cout << "Iterations: " << iterations << std::endl;
-            std::cout << "Verbose Mode: " << (verbose ? "true" : "false") << std::endl;
-
-        }
-
-        std::cout << "res = " << res << std::endl;
+        
     }
-    std::cout << "End time now :" << ast::utils::get_format_time() << std::endl;
+	LOG(INFO) << "End time now :" << ast::utils::get_format_time() << std::endl;
+    
+
+
+
+    google::ShutdownGoogleLogging();
 
 }
 

@@ -17,7 +17,7 @@
     <ClCompile Include="TimeHelp.hpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="AudioAssistant.cpp">
+    <ClCompile Include="AudioAssistant.cc">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

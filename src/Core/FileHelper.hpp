@@ -40,7 +40,7 @@ namespace ast::utils
 	//如何判断输入的容器是path还是string?
 	//str:待寻找文件的后缀名,如果要获取所有文件名传入*
 	template <typename T>
-	inline bool get_files_from_directory(const T& input_path, const char* str, std::vector<fs::path>& v_output)
+	inline bool get_files_from_directory(const T& input_path, const char* ext_name, std::vector<fs::path>& v_output)
 	{
 		if constexpr (!std::is_constructible_v<fs::path, T>)
 		{
@@ -58,13 +58,31 @@ namespace ast::utils
 
 		for (auto& itr : fs::directory_iterator(path))
 		{
-			if (itr.is_regular_file() && (itr.path().extension() == str || str == "*"))
+			if (itr.is_regular_file() && (itr.path().extension() == ext_name || ext_name == "*"))
 			{
 				v_output.emplace_back(itr);
 			}
 		}
 
 		std::sort(v_output.begin(), v_output.end());
+		return true;
+	}
+
+	bool FindFilesWithExtension(const fs::path& folder_path, const std::string& ext_name, std::vector<fs::path>& v_output,bool recursive = false) {
+		if (!fs::is_directory(folder_path)) {
+			//std::cerr << "The input argu is not a valid directory or may not exist: " << folder_path << std::endl;
+			return false;
+		}
+
+		for (const auto& entry : fs::directory_iterator(folder_path)) {
+			if (entry.is_regular_file() && (entry.path().extension() == ext_name || ext_name == "*")) {
+				v_output.emplace_back(entry);
+			}
+			else if (entry.is_directory() && recursive) {
+				FindFilesWithExtension(entry, ext_name, v_output, recursive); // 递归调用，处理子文件夹
+			}
+		}
+
 		return true;
 	}
 

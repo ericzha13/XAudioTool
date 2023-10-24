@@ -76,7 +76,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)..\..\Src\Core;$(SolutionDir)..\..\Src\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\..\lib\win64_debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)x64\Debug;$(SolutionDir)..\..\lib\win64_debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -119,7 +119,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>gflags_debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gflags_debug.lib;glogd.lib;Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

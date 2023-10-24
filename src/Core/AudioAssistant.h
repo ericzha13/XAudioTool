@@ -1,5 +1,15 @@
 #pragma once
 
+#ifdef _WIN32
+#ifdef CORE_API_IMPORT
+#define CORE_API __declspec(dllimport)
+#else
+#define CORE_API  __declspec(dllexport)
+#endif
+#else //CORE_API_IMPORT
+
+#endif //_WIN32
+
 
 #include <filesystem>
 #include <iostream>
@@ -14,7 +24,7 @@
 #include <shared_mutex>
 #include <chrono>
 
-
+#include <glog/logging.h>
 #include "FileHelper.hpp"
 
 #include "json.hpp"
@@ -50,17 +60,17 @@ public:
 	AudioAssistant(const std::string res);
 	AudioAssistant(const AudioAssistant&) = delete;
 	AudioAssistant(AudioAssistant&&) = delete;
-	AudioAssistant& operator=(const AudioAssistant&) = delete;
-	AudioAssistant& operator=(AudioAssistant&&) = delete;
+	CORE_API AudioAssistant& operator=(const AudioAssistant&) = delete;
+	CORE_API AudioAssistant& operator=(AudioAssistant&&) = delete;
 
 	//公共函数
-	bool wav_to_pcm();
-	bool wav_to_pcm(const char* str);
+	CORE_API bool wav_to_pcm();
+	CORE_API bool wav_to_pcm(const char* str);
 
-	bool split_audio(const std::string&& audioPath, const int&& chanel);
+	CORE_API bool split_audio(const std::string&& audioPath, const int&& chanel);
 
-	bool set_target_path_or_file(const string&& str);
-	bool cut_audio_timepoint(const string&& audioPath, const int&& chanel);
+	CORE_API bool set_target_path_or_file(const string&& str);
+	CORE_API bool cut_audio_timepoint(const string&& audioPath, const int&& chanel);
 
 	~AudioAssistant();
 
@@ -89,26 +99,26 @@ class MergeAudio
 {
 public:
 	~MergeAudio() = default;
-	MergeAudio();
-	MergeAudio(const fs::path working_path);
+	MergeAudio() = delete;
 	MergeAudio(const MergeAudio&) = delete;
 	MergeAudio(MergeAudio&&) = delete;
 	MergeAudio& operator=(const MergeAudio&) = delete;
 	MergeAudio& operator=(MergeAudio&&) = delete;
 
-	void refilter_by_extension(const std::string ext);//输入扩展名，将文件池里的不是该扩展名的文件剔除池子
-	bool start_merge();//开始合并吧
-	bool reset_output_file(fs::path new_output_file);
+	CORE_API MergeAudio(fs::path working_path);
+	CORE_API void refilter_by_extension(const std::string ext);//输入扩展名，将文件池里的不是该扩展名的文件剔除池子
+	CORE_API bool start_merge();//开始合并吧
+	CORE_API bool reset_output_file(fs::path new_output_file);
 
 
 	//输入多个单声道的音频，并合并
 	template<typename... Args>
 	bool choose_audio_and_merge(Args&&... args) {
 		
-		(m_audio_pool.emplace_back(std::forward<Args>(args)), ...);
+		(mv_audio_pool.emplace_back(std::forward<Args>(args)), ...);
 
-		m_num_of_material = m_audio_pool.size();
-		if (!ast::utils::are_files_regular(m_audio_pool)) {
+		m_num_of_material = mv_audio_pool.size();
+		if (!ast::utils::are_files_regular(mv_audio_pool)) {
 			deinit();
 			std::cerr << "some file isnot regular_file " << std::endl;
 			return false;
@@ -127,7 +137,7 @@ private:
 	void deinit();
 
 	
-	std::vector<fs::path> m_audio_pool;
+	std::vector<fs::path> mv_audio_pool;
 	fs::path m_default_output;//输出文件的路径，可设置，不设置为当前目录
 	int m_num_of_material;//待处理音频的数量，也是通道数
 	std::vector<std::ifstream> v_ifs_handle; // 用于管理 ifstream 对象的 vector 容器
@@ -162,7 +172,7 @@ private:
 	void deinit();
 
 	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//一个智能指针，用于最开始申请公用的读数据缓存空间
-	std::vector<fs::path> m_audio_pool;
+	std::vector<fs::path> mv_audio_pool;
 	int m_input_chanel;//待输入音频的数量
 	std::vector<std::ofstream> v_ofs_handle; // 用于管理 ofstream 对象的 vector 容器
 	ifstream m_ifs;//输入文件描述符
