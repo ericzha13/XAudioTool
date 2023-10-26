@@ -626,16 +626,18 @@ MergeAudio::MergeAudio(const fs::path working_path)
 	:m_default_output(working_path/"merge_output.pcm"),
 	m_num_of_material(0)
 {
-	if (!ast::utils::FindFilesWithExtension(working_path, ".pcm", mv_audio_pool)) {
+	if (!ast::utils::FindFilesWithExtension(working_path, "*", mv_audio_pool)) {
 		LOG(WARNING) << "get_files_from_directory failed because of the input argu is not a folder";
+		throw "create MergeAudio object failed";
 	}
 	m_num_of_material = mv_audio_pool.size();
 }
 
 
-void MergeAudio::refilter_by_extension(const std::string ext)
+void MergeAudio::refilter_by_extension(const std::string& ext)
 {
-
+	CHECK(ext.length());
+	CHECK(ext.at(0) == '.');
 	std::remove_if(mv_audio_pool.begin(), mv_audio_pool.end(), [&](const fs::path& p) {
 		return p.extension() != ext;
 		});

@@ -39,16 +39,28 @@ constexpr static int audio_readsize_once = 1 * 256 * sizeof(short) * 10000;//¶ÁÒ
 */
 using namespace std;
 
-enum class ToolsMsg
-{
-	/* Task Info */
-	TaskMvw = 10000,     // »½ÐÑÏûÏ¢
-	TaskSr,              // Ê¶±ðÏûÏ¢
-	TaskSe,              // SEÏûÏ¢
-};
 
-using ToolsCallback = std::function<void(ToolsMsg, const json::value&, void*)>;
+// A helper macro for checks that log to streams that makes it easier for the
+// compiler to identify and warn about dead code, e.g.:
+//
+//   return 2;
+//   NOTREACHED();
+//
+// The 'switch' is used to prevent the 'else' from being ambiguous when the
+// macro is used in an 'if' clause such as:
+// if (a == 1)
+//   CHECK(Foo());
+//
+// TODO(crbug.com/1380930): Remove the const bool when the blink-gc plugin has
+// been updated to accept `if (LIKELY(!field_))` as well as `if (!field_)`.
+#define LOGGING_CHECK_FUNCTION_IMPL(condition)              \
+  switch (condition)                                \
+  case 0:                                               \
+	LOG(ERROR)<<"condition666:";throw "CHECK invalid input";//ÎªºÎ²»´òÓ¡£¿
+                
 
+#define CHECK(condition)                                                \
+  LOGGING_CHECK_FUNCTION_IMPL(condition)
 
 
 //ÒôÆµ×ª»»£¬½«pcm×ªwav£¬Ö§³Öµ¥ÌõºÍÅúÁ¿
@@ -106,7 +118,7 @@ public:
 	MergeAudio& operator=(MergeAudio&&) = delete;
 
 	CORE_API MergeAudio(fs::path working_path);
-	CORE_API void refilter_by_extension(const std::string ext);//ÊäÈëÀ©Õ¹Ãû£¬½«ÎÄ¼þ³ØÀïµÄ²»ÊÇ¸ÃÀ©Õ¹ÃûµÄÎÄ¼þÌÞ³ý³Ø×Ó
+	CORE_API void refilter_by_extension(const std::string& ext);//ÊäÈëÀ©Õ¹Ãû£¬½«ÎÄ¼þ³ØÀïµÄ²»ÊÇ¸ÃÀ©Õ¹ÃûµÄÎÄ¼þÌÞ³ý³Ø×Ó
 	CORE_API bool start_merge();//¿ªÊ¼ºÏ²¢°É
 	CORE_API bool reset_output_file(fs::path new_output_file);
 

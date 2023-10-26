@@ -19,23 +19,24 @@ int main(int argc, char** argv)
 
 	google::InitGoogleLogging("AABB");
 
-	//google::SetLogDestination(google::GLOG_INFO,R"(D:\Var\Xaudio\agv_4)");
-	//google::SetLogFilenameExtension(".log");
+	google::SetLogDestination(google::GLOG_INFO,R"(D:\Var\Xaudio\agv_4)");
+	google::SetLogFilenameExtension(".log");
 
 
 
 	FLAGS_v = 1;// no used
 	//FLAGS_logtostdout = true;
-	//FLAGS_alsologtostderr = true;
-	FLAGS_logtostderr = true;
+	FLAGS_alsologtostderr = true;
+	//FLAGS_logtostderr = true;
 	// FLAGS_stderrthreshold = google::GLOG_WARNING;
 	FLAGS_colorlogtostdout = true;
 	FLAGS_colorlogtostderr = true;
-	//FLAGS_max_log_size = 3;
-	 //FLAGS_stop_logging_if_full_disk = true;
+	FLAGS_max_log_size = 3;
+	FLAGS_stop_logging_if_full_disk = true;
+	//FLAGS_stderrthreshold = google::GLOG_FATAL;
 
 
-
+	//google::FlushLogFiles(ERROR); google::FlushLogFilesUnsafe(ERROR);
 	LOG(INFO) << "start time now :" << ast::utils::get_format_time();
     {
         std::cout << "Hello World!\n";
@@ -44,12 +45,17 @@ int main(int argc, char** argv)
 		
 		try
 		{
-			std::filesystem::path tt_folder = R"(C:\Users\ericzha\Music\TestData\vw_log_2023-04-28_09_44_49.649630_final0.pcm)";
+			std::filesystem::path tt_folder = R"(C:\Users\ericzha\Music\TestData\)";
 			MergeAudio aa(tt_folder);
+			aa.refilter_by_extension("pcm");
 		}
 		catch (const std::exception& e)
 		{
 			LOG(ERROR) << "std::exception " << e.what();
+		}
+		catch (const char* s)
+		{
+			LOG(ERROR) << "std::exception " << s;
 		}
 		
         
