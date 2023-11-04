@@ -25,10 +25,10 @@ int main(int argc, char** argv)
 
 
 	FLAGS_v = 1;// no used
-	//FLAGS_logtostdout = true;
+	//FLAGS_logtostdout = false;
 	FLAGS_alsologtostderr = true;
 	//FLAGS_logtostderr = true;
-	// FLAGS_stderrthreshold = google::GLOG_WARNING;
+	FLAGS_stderrthreshold = google::GLOG_WARNING;
 	FLAGS_colorlogtostdout = true;
 	FLAGS_colorlogtostderr = true;
 	FLAGS_max_log_size = 3;
@@ -47,7 +47,8 @@ int main(int argc, char** argv)
 		{
 			std::filesystem::path tt_folder = R"(C:\Users\ericzha\Music\TestData\)";
 			MergeAudio aa(tt_folder);
-			aa.refilter_by_extension("pcm");
+			aa.refilter_by_extension(".pcm");
+			aa.start_merge();
 		}
 		catch (const std::exception& e)
 		{

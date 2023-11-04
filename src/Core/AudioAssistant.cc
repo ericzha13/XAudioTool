@@ -622,11 +622,12 @@ bool CutOrLengthenAudio::cut_op_main(const long start_byte,const long end_byte)
 
 
 
-MergeAudio::MergeAudio(const fs::path working_path)
-	:m_default_output(working_path/"merge_output.pcm"),
+MergeAudio::MergeAudio(const fs::path working_path, const char* extension)
+	:m_default_output(working_path/("merge_output" + ast::utils::get_format_time(true) + ".pcm")),
 	m_num_of_material(0)
 {
-	if (!ast::utils::FindFilesWithExtension(working_path, "*", mv_audio_pool)) {
+	
+	if (!ast::utils::FindFilesWithExtension(working_path, extension, mv_audio_pool)) {
 		LOG(WARNING) << "get_files_from_directory failed because of the input argu is not a folder";
 		throw "create MergeAudio object failed";
 	}
@@ -636,26 +637,21 @@ MergeAudio::MergeAudio(const fs::path working_path)
 
 void MergeAudio::refilter_by_extension(const std::string& ext)
 {
-	CHECK(ext.length());
-	CHECK(ext.at(0) == '.');
-	std::remove_if(mv_audio_pool.begin(), mv_audio_pool.end(), [&](const fs::path& p) {
-		return p.extension() != ext;
-		});
+	CHECK_ERROR_THROW(ext.empty(), "The input string si empty");
+	CHECK_ERROR_THROW(ext.at(0) != '.', "The input string does not start with . Beginning");
+	mv_audio_pool.erase(
+		std::remove_if(mv_audio_pool.begin(), mv_audio_pool.end(), [&](const fs::path& p) {return p.extension() != ext; })
+		, mv_audio_pool.end());
 
 	m_num_of_material = mv_audio_pool.size();
+	
+
 }
 
 bool MergeAudio::start_merge() {
 
-	if (m_num_of_material > 16 || m_num_of_material <= 1)
-	{
-		cerr << "unsupported chanel[2~16], merge failed！" << endl;
-		return false;
-	}
-	else if (mv_audio_pool.size() <= 1) {
-		cerr << "no audio to merge!!" << endl;
-		return false;
-	}
+	CHECK_ERROR_RETURN((m_num_of_material > 16 || m_num_of_material < 1),"unsupported chanel[2~16], merge failed!",false);
+	CHECK_WARNING(m_num_of_material == 1,"There is only one audio that has been processed, now it will be ignored");
 	
 	
 	
@@ -668,7 +664,7 @@ bool MergeAudio::start_merge() {
 			}
 		}
 		catch (const std::bad_alloc& e) {
-			std::cerr << "Failed to allocate memory: " << e.what() << std::endl;
+			LOG(ERROR) << "Failed to allocate memory,<<" << e.what();
 			return false;
 		}
 	}
@@ -705,7 +701,7 @@ bool MergeAudio::start_merge() {
 			{
 				if (m_ofs.write(v_tmp_buffer.at(num).get() + cur, sampleSize).bad()) {
 					// 写入失败
-					std::cerr << "write failed [MergeAudio::start_merge() ] "<< std::endl;
+					LOG(ERROR) << "write output pcm failed";
 				}
 			}
 		}
@@ -715,7 +711,7 @@ bool MergeAudio::start_merge() {
 	
 	//处理完毕,释放资源
 	deinit();
-	cout << "merge success, file:" << m_default_output << endl;
+	LOG(INFO) << "merge success, file:" << m_default_output;
 	return true;
 }
 

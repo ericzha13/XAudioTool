@@ -40,28 +40,9 @@ constexpr static int audio_readsize_once = 1 * 256 * sizeof(short) * 10000;//¶ÁÒ
 using namespace std;
 
 
-// A helper macro for checks that log to streams that makes it easier for the
-// compiler to identify and warn about dead code, e.g.:
-//
-//   return 2;
-//   NOTREACHED();
-//
-// The 'switch' is used to prevent the 'else' from being ambiguous when the
-// macro is used in an 'if' clause such as:
-// if (a == 1)
-//   CHECK(Foo());
-//
-// TODO(crbug.com/1380930): Remove the const bool when the blink-gc plugin has
-// been updated to accept `if (LIKELY(!field_))` as well as `if (!field_)`.
-#define LOGGING_CHECK_FUNCTION_IMPL(condition)              \
-  switch (condition)                                \
-  case 0:                                               \
-	LOG(ERROR)<<"condition666:";throw "CHECK invalid input";//ÎªºÎ²»´òÓ¡£¿
-                
-
-#define CHECK(condition)                                                \
-  LOGGING_CHECK_FUNCTION_IMPL(condition)
-
+#define CHECK_ERROR_THROW(condition,note)  if (condition) {LOG(ERROR) << note;throw note;}       
+#define CHECK_ERROR_RETURN(condition,note,errno)  if (condition) {LOG(ERROR) << note;return errno;} 
+#define CHECK_WARNING(condition,note) if (condition) {LOG(WARNING) << note;}       
 
 //ÒôÆµ×ª»»£¬½«pcm×ªwav£¬Ö§³Öµ¥ÌõºÍÅúÁ¿
 //ºóĞø»áÖ§³Ö¸ü¶àÒôÆµ¸ñÊ½
@@ -117,7 +98,7 @@ public:
 	MergeAudio& operator=(const MergeAudio&) = delete;
 	MergeAudio& operator=(MergeAudio&&) = delete;
 
-	CORE_API MergeAudio(fs::path working_path);
+	CORE_API MergeAudio(fs::path working_path, const char* extension = ".pcm");
 	CORE_API void refilter_by_extension(const std::string& ext);//ÊäÈëÀ©Õ¹Ãû£¬½«ÎÄ¼ş³ØÀïµÄ²»ÊÇ¸ÃÀ©Õ¹ÃûµÄÎÄ¼şÌŞ³ı³Ø×Ó
 	CORE_API bool start_merge();//¿ªÊ¼ºÏ²¢°É
 	CORE_API bool reset_output_file(fs::path new_output_file);
@@ -126,7 +107,7 @@ public:
 	//ÊäÈë¶à¸öµ¥ÉùµÀµÄÒôÆµ£¬²¢ºÏ²¢
 	template<typename... Args>
 	bool choose_audio_and_merge(Args&&... args) {
-		
+
 		(mv_audio_pool.emplace_back(std::forward<Args>(args)), ...);
 
 		m_num_of_material = mv_audio_pool.size();
@@ -148,7 +129,7 @@ public:
 private:
 	void deinit();
 
-	
+
 	std::vector<fs::path> mv_audio_pool;
 	fs::path m_default_output;//Êä³öÎÄ¼şµÄÂ·¾¶£¬¿ÉÉèÖÃ£¬²»ÉèÖÃÎªµ±Ç°Ä¿Â¼
 	int m_num_of_material;//´ı´¦ÀíÒôÆµµÄÊıÁ¿£¬Ò²ÊÇÍ¨µÀÊı
@@ -168,8 +149,8 @@ class SplitAudio
 {
 public:
 	~SplitAudio() = default;
-	SplitAudio()=delete;
-	SplitAudio(const fs::path files,const int chanel);
+	SplitAudio() = delete;
+	SplitAudio(const fs::path files, const int chanel);
 
 	SplitAudio(const SplitAudio&) = delete;
 	SplitAudio(SplitAudio&&) = delete;
@@ -188,7 +169,7 @@ private:
 	int m_input_chanel;//´ıÊäÈëÒôÆµµÄÊıÁ¿
 	std::vector<std::ofstream> v_ofs_handle; // ÓÃÓÚ¹ÜÀí ofstream ¶ÔÏóµÄ vector ÈİÆ÷
 	ifstream m_ifs;//ÊäÈëÎÄ¼şÃèÊö·û
-	
+
 };
 
 
@@ -201,9 +182,9 @@ private:
 class FindAudioPosition
 {
 public:
-	~FindAudioPosition()= default;
+	~FindAudioPosition() = default;
 	FindAudioPosition() = delete;
-	FindAudioPosition(const fs::path short_path,const fs::path long_path);
+	FindAudioPosition(const fs::path short_path, const fs::path long_path);
 	FindAudioPosition(const FindAudioPosition&) = delete;
 	FindAudioPosition(FindAudioPosition&&) = delete;
 	FindAudioPosition& operator=(const FindAudioPosition&) = delete;
@@ -211,7 +192,7 @@ public:
 
 	long get_shortaudio_position();//»ñÈ¡¶ÌÒôÆµÔÚ³¤ÒôÆµµÄÎ»ÖÃ£¬·µ»ØÖµÊÇºÁÃë£¬½ö½öÖ§³Öµ¥Í¨µÀ
 	string get_shortaudio_position_str();
-	
+
 
 private:
 	bool is_init_success = false;
@@ -237,7 +218,7 @@ class CutOrLengthenAudio
 public:
 	~CutOrLengthenAudio() = default;
 	CutOrLengthenAudio() = delete;
-	CutOrLengthenAudio(const fs::path original_path,int chanel = 1);
+	CutOrLengthenAudio(const fs::path original_path, int chanel = 1);
 	CutOrLengthenAudio(const FindAudioPosition&) = delete;
 	CutOrLengthenAudio(FindAudioPosition&&) = delete;
 	CutOrLengthenAudio& operator=(const FindAudioPosition&) = delete;
@@ -254,8 +235,8 @@ private:
 	ofstream ofs_output_audio;
 	std::unique_ptr<char[]> m_original_audio_buffer = nullptr;
 	long m_long_audio_total_size = 0;//³¤ÒôÆµµÄ×Ü³¤¶È
-	
-	bool get_start_and_end_ms(const std::string& time_str,long& start_ms,long& end_ms);
+
+	bool get_start_and_end_ms(const std::string& time_str, long& start_ms, long& end_ms);
 	bool cut_op_main(const long start_byte, const long end_byte);
 
 	int audio_chanel = 1;
