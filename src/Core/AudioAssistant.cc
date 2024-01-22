@@ -4,15 +4,15 @@
 //ToolsCallback callback, void* callback_arg
 AudioAssistant::AudioAssistant()
 {
-	//²úÉú¸³ÖµºÍÒ»Ğ©³õÊ¼»¯
+	//äº§ç”Ÿèµ‹å€¼å’Œä¸€äº›åˆå§‹åŒ–
 	m_current_working_folder = filesystem::current_path();
-	m_output_pcm_folder = m_current_working_folder / "output";//ÓĞĞ©¹¦ÄÜĞèÒªÊä³ö´óÁ¿ÒôÆµ£¬·Åµ½Í¬Ò»¼¶Â·¾¶²»ºÏÊÊ£¬´Ë´¦·Åµ½Í¬Ò»¼¶Ä¿Â¼µÄoutÎÄ¼ş¼ĞÏÂ
+	m_output_pcm_folder = m_current_working_folder / "output";//æœ‰äº›åŠŸèƒ½éœ€è¦è¾“å‡ºå¤§é‡éŸ³é¢‘ï¼Œæ”¾åˆ°åŒä¸€çº§è·¯å¾„ä¸åˆé€‚ï¼Œæ­¤å¤„æ”¾åˆ°åŒä¸€çº§ç›®å½•çš„outæ–‡ä»¶å¤¹ä¸‹
 
 	//if (!filesystem::is_directory(m_output_pcm_folder / "out")) {
 	//	filesystem::create_directory(m_output_pcm_folder / "out");
 	//}
 
-	//·ÖÅä5.12mbµÄ¿Õ¼ä,ÓÃÓÚÍ¨ÓÃµÄ¶ÁÎÄ¼ş»º´æbuffer
+	//åˆ†é…5.12mbçš„ç©ºé—´,ç”¨äºé€šç”¨çš„è¯»æ–‡ä»¶ç¼“å­˜buffer
 	m_readpcm_buffer_common = make_unique<char[]>(audio_readsize_once + 1);
 
 	for (int i = 0; i < 16; i++) {
@@ -20,12 +20,12 @@ AudioAssistant::AudioAssistant()
 	}
 }
 
-//´«ÈëÄ¬ÈÏÂ·¾¶»òÄ¬ÈÏ´ı´¦ÀíµÄÎÄ¼ş
+//ä¼ å…¥é»˜è®¤è·¯å¾„æˆ–é»˜è®¤å¾…å¤„ç†çš„æ–‡ä»¶
 AudioAssistant::AudioAssistant(const string res)
 {
 	if (filesystem::is_directory(res)) {
 		m_current_working_folder = res;
-		m_output_pcm_folder = m_current_working_folder / "output";//ÓĞĞ©¹¦ÄÜĞèÒªÊä³ö´óÁ¿ÒôÆµ£¬·Åµ½Í¬Ò»¼¶Â·¾¶²»ºÏÊÊ£¬´Ë´¦·Åµ½Í¬Ò»¼¶Ä¿Â¼µÄoutÎÄ¼ş¼ĞÏÂ
+		m_output_pcm_folder = m_current_working_folder / "output";//æœ‰äº›åŠŸèƒ½éœ€è¦è¾“å‡ºå¤§é‡éŸ³é¢‘ï¼Œæ”¾åˆ°åŒä¸€çº§è·¯å¾„ä¸åˆé€‚ï¼Œæ­¤å¤„æ”¾åˆ°åŒä¸€çº§ç›®å½•çš„outæ–‡ä»¶å¤¹ä¸‹
 		ast::utils::create_format_directory(m_current_working_folder, "output");
 	}
 	else if (filesystem::is_regular_file(res))
@@ -34,13 +34,13 @@ AudioAssistant::AudioAssistant(const string res)
 	}
 	else {
 		m_current_working_folder = filesystem::current_path();
-		m_output_pcm_folder = m_current_working_folder / "output";//ÓĞĞ©¹¦ÄÜĞèÒªÊä³ö´óÁ¿ÒôÆµ£¬·Åµ½Í¬Ò»¼¶Â·¾¶²»ºÏÊÊ£¬´Ë´¦·Åµ½Í¬Ò»¼¶Ä¿Â¼µÄoutÎÄ¼ş¼ĞÏÂ
+		m_output_pcm_folder = m_current_working_folder / "output";//æœ‰äº›åŠŸèƒ½éœ€è¦è¾“å‡ºå¤§é‡éŸ³é¢‘ï¼Œæ”¾åˆ°åŒä¸€çº§è·¯å¾„ä¸åˆé€‚ï¼Œæ­¤å¤„æ”¾åˆ°åŒä¸€çº§ç›®å½•çš„outæ–‡ä»¶å¤¹ä¸‹
 	}
 
 	m_readpcm_buffer_common = make_unique<char[]>(audio_readsize_once + 1);
 
 
-	//ÉêÇëÖĞ¼ä»º´æ¿Õ¼ä£¬ÓÃÓÚ¶ÁÎÄ¼ş
+	//ç”³è¯·ä¸­é—´ç¼“å­˜ç©ºé—´ï¼Œç”¨äºè¯»æ–‡ä»¶
 	for (int i = 0; i < 16; i++) {
 		mp_tmp_input_cache[i] = make_unique<char []>(2*1024*1024);
 	}
@@ -59,10 +59,10 @@ AudioAssistant::~AudioAssistant()
 
 
 
-//ÍêÉÆ
+//å®Œå–„
 bool AudioAssistant::wav_to_pcm(const char* str)
 {
-	//Í·²¿Êı¾İºÍÊäÈëÓĞĞ§ĞÔ¼ì²â,Èç¹ûÊäÈë²»ÊÇwav¸ñÊ½Í·²¿Êı¾İµÄÒôÆµ,Ôò²»²Ù×÷
+	//å¤´éƒ¨æ•°æ®å’Œè¾“å…¥æœ‰æ•ˆæ€§æ£€æµ‹,å¦‚æœè¾“å…¥ä¸æ˜¯wavæ ¼å¼å¤´éƒ¨æ•°æ®çš„éŸ³é¢‘,åˆ™ä¸æ“ä½œ
 	if (!check_suffix(str)) { return false; }
 
 
@@ -74,7 +74,7 @@ bool AudioAssistant::wav_to_pcm(const char* str)
 	ofstream m_ofs(tmp_path.parent_path() / (tmp_path.stem().string() + ".pcm"), ios::binary | ios::out);
 	unique_lock<mutex> lock(m_readpcm_buffer_mutex);
 	while (ifs.peek() != EOF) {
-		//Ã¿´Î¶ÁÈ¡5.12MB
+		//æ¯æ¬¡è¯»å–5.12MB
 		memset(m_readpcm_buffer_common.get(), 0, audio_readsize_once);
 		size_t read_size = ifs.read(m_readpcm_buffer_common.get(), audio_readsize_once).gcount();
 
@@ -86,7 +86,7 @@ bool AudioAssistant::wav_to_pcm(const char* str)
 		m_ofs.write(m_readpcm_buffer_common.get(), audio_readsize_once);
 	}
 
-	cout << tmp_path.string() << "×ªÎªpcm¸ñÊ½³É¹¦" << endl;
+	cout << tmp_path.string() << "è½¬ä¸ºpcmæ ¼å¼æˆåŠŸ" << endl;
 	m_ofs.close();
 	ifs.close();
 
@@ -95,24 +95,24 @@ bool AudioAssistant::wav_to_pcm(const char* str)
 	return true;
 }
 
-//Ê¹ÓÃset_target_path_or_fileÉèÖÃµÄÎÄ¼şÀ´×ª»»
+//ä½¿ç”¨set_target_path_or_fileè®¾ç½®çš„æ–‡ä»¶æ¥è½¬æ¢
 bool AudioAssistant::wav_to_pcm()
 {
 	return wav_to_pcm(m_prehandled_file.string().c_str());
 }
 
 
-//ÅĞ¶ÏÎÄ¼şºó×ºÃûÊÇ·ñºÍÊµ¼Ê¶ş½øÖÆÍ·²¿Êı¾İÒ»ÖÂ£¬·ÀÖ¹ÓĞĞ©ÒôÆµÎÄ¼şËäÈ»ÊÇ.wav½áÎ²£¬µ«ÊÇ±¾ÖÊÊÇpcm¸ñÊ½
+//åˆ¤æ–­æ–‡ä»¶åç¼€åæ˜¯å¦å’Œå®é™…äºŒè¿›åˆ¶å¤´éƒ¨æ•°æ®ä¸€è‡´ï¼Œé˜²æ­¢æœ‰äº›éŸ³é¢‘æ–‡ä»¶è™½ç„¶æ˜¯.wavç»“å°¾ï¼Œä½†æ˜¯æœ¬è´¨æ˜¯pcmæ ¼å¼
 bool AudioAssistant::check_suffix(const string&& input_pcm_pcmfile)
 {
 	if (!filesystem::is_regular_file(input_pcm_pcmfile))
 	{
-		printf("ERRÊäÈëÒôÆµ[%s]²»´æÔÚ»òÊäÈëÎª¿Õ£¬»ò²»ÊÇ³£¹æÎÄ¼ş\n", input_pcm_pcmfile.c_str());
+		printf("ERRè¾“å…¥éŸ³é¢‘[%s]ä¸å­˜åœ¨æˆ–è¾“å…¥ä¸ºç©ºï¼Œæˆ–ä¸æ˜¯å¸¸è§„æ–‡ä»¶\n", input_pcm_pcmfile.c_str());
 		return false;
 	}
 	else if (filesystem::file_size(input_pcm_pcmfile) < 44)
 	{
-		printf("ÊäÈëÎÄ¼ş%s´óĞ¡²»×ã44×Ö½Ú£¬º¯Êı·µ»Ø\n", input_pcm_pcmfile.c_str());
+		printf("è¾“å…¥æ–‡ä»¶%så¤§å°ä¸è¶³44å­—èŠ‚ï¼Œå‡½æ•°è¿”å›\n", input_pcm_pcmfile.c_str());
 		return false;
 	}
 
@@ -131,16 +131,16 @@ bool AudioAssistant::check_suffix(const string&& input_pcm_pcmfile)
 	}
 	else
 	{
-		printf("ÊäÈëÎÄ¼ş²»ÊÇpcmÒ²²»ÊÇwav£¬º¯Êı·µ»Ø\n");
+		printf("è¾“å…¥æ–‡ä»¶ä¸æ˜¯pcmä¹Ÿä¸æ˜¯wavï¼Œå‡½æ•°è¿”å›\n");
 		return false;
 	}
 
-	//wav¸ñÊ½µÄ3´ÎID¼ì²â0~3  12~15  36~39
-	//wav¸ñÊ½£¬¿ªÍ·²»ÊÇRIFF»òÕß.  ·Çwav¸ñÊ½,¿ªÍ·È´ÊÇRIFF»á·µ»Ø´íÎó
-	//wav¸ñÊ½£¬¿ªÍ·ÊÇRIFF.       ·Çwav¸ñÊ½,¿ªÍ·²»ÊÇRIFF»á·µ»ØÕıÈ·
+	//wavæ ¼å¼çš„3æ¬¡IDæ£€æµ‹0~3  12~15  36~39
+	//wavæ ¼å¼ï¼Œå¼€å¤´ä¸æ˜¯RIFFæˆ–è€….  éwavæ ¼å¼,å¼€å¤´å´æ˜¯RIFFä¼šè¿”å›é”™è¯¯
+	//wavæ ¼å¼ï¼Œå¼€å¤´æ˜¯RIFF.       éwavæ ¼å¼,å¼€å¤´ä¸æ˜¯RIFFä¼šè¿”å›æ­£ç¡®
 	ifstream ifs(input_pcm_pcmfile, ios_base::in | ios_base::binary);
 	if (!ifs.is_open()) {
-		cerr << input_pcm_pcmfile << "ÔÚcheck_suffixº¯ÊıÖĞ´ò¿ªÊ§°Ü" << endl;
+		cerr << input_pcm_pcmfile << "åœ¨check_suffixå‡½æ•°ä¸­æ‰“å¼€å¤±è´¥" << endl;
 		return false;
 	}
 	char tmp[5] = { 0 };
@@ -174,7 +174,7 @@ bool AudioAssistant::check_suffix(const string&& input_pcm_pcmfile)
 }
 
 
-//ÉèÖÃÂ·¾¶£¬Ö§³Östring»òÕßpathÀàĞÍ²¢±£´æ±äÁ¿£¬ÆäËûÀàĞÍ²»Ö§³Ö£¬·ÏÆú
+//è®¾ç½®è·¯å¾„ï¼Œæ”¯æŒstringæˆ–è€…pathç±»å‹å¹¶ä¿å­˜å˜é‡ï¼Œå…¶ä»–ç±»å‹ä¸æ”¯æŒï¼ŒåºŸå¼ƒ
 bool AudioAssistant::set_target_path_or_file(const string&& str)
 {
 	if (filesystem::is_directory(str))
@@ -187,10 +187,10 @@ bool AudioAssistant::set_target_path_or_file(const string&& str)
 	{
 		m_prehandled_file = str;
 		m_preoutput_file = ast::utils::create_format_directory<true>(m_prehandled_file, "output", m_prehandled_file.stem().string() + "_out.pcm");
-		if (m_preoutput_file == "")cerr << "Êä³öÎÄ¼şÉèÖÃÒì³££¬->set_target_path_or_file" << endl;
+		if (m_preoutput_file == "")cerr << "è¾“å‡ºæ–‡ä»¶è®¾ç½®å¼‚å¸¸ï¼Œ->set_target_path_or_file" << endl;
 	}
 	else {
-		cerr << "set_working_pathÂ·¾¶Òì³££¬·Ç³£¹æÎÄ¼ş£¬·ÇÎÄ¼ş¼Ğ" << endl;
+		cerr << "set_working_pathè·¯å¾„å¼‚å¸¸ï¼Œéå¸¸è§„æ–‡ä»¶ï¼Œéæ–‡ä»¶å¤¹" << endl;
 		return false;
 	}
 
@@ -201,43 +201,43 @@ bool AudioAssistant::set_target_path_or_file(const string&& str)
 
 
 
-//°ÑÒôÆµ²ğ·Ö³ÉN¸öÍ¨µÀ
+//æŠŠéŸ³é¢‘æ‹†åˆ†æˆNä¸ªé€šé“
 bool AudioAssistant::split_audio(const string&& audioPath, const int&& chanel)
 {
 
-	if (chanel > 16 || chanel <= 1) { cout << "´ı²ğ·ÖÒôÆµÍ¨µÀÊıÒì³£" << endl; return false; }
+	if (chanel > 16 || chanel <= 1) { cout << "å¾…æ‹†åˆ†éŸ³é¢‘é€šé“æ•°å¼‚å¸¸" << endl; return false; }
 	filesystem::path input_name_pcm_file = audioPath;
-	if (!filesystem::is_regular_file(input_name_pcm_file)) { cerr << input_name_pcm_file << "²»ÊÇÒ»¸öÎÄ¼ş»òÎÄ¼ş²»´æÔÚ" << audioPath << endl;  return false; }
+	if (!filesystem::is_regular_file(input_name_pcm_file)) { cerr << input_name_pcm_file << "ä¸æ˜¯ä¸€ä¸ªæ–‡ä»¶æˆ–æ–‡ä»¶ä¸å­˜åœ¨" << audioPath << endl;  return false; }
 
 
-	//´ò¿ªÊäÈëÎÄ¼ş
+	//æ‰“å¼€è¾“å…¥æ–‡ä»¶
 	ifstream m_ifs(input_name_pcm_file, ios_base::in | ios_base::binary | ios_base::ate);
 	long long m_file_size = m_ifs.tellg();
 	m_ifs.seekg(0, ios_base::beg);
-	cout << "ÊäÈëÎÄ¼şÃû£º" << input_name_pcm_file << "ÎÄ¼ş´óĞ¡£º" << m_file_size << endl;
+	cout << "è¾“å…¥æ–‡ä»¶åï¼š" << input_name_pcm_file << "æ–‡ä»¶å¤§å°ï¼š" << m_file_size << endl;
 	if (m_file_size % (sizeof(short) * chanel) != 0) {
-		cout << "´ı²ğ·ÖÊäÈëÒôÆµÎŞ·¨×öµ½N¸öÍ¨µÀ¾ù·Ö£¬Êä³öÒôÆµ»á´æÔÚ³¤¶È²»Ò»ÖÂ" << endl;
+		cout << "å¾…æ‹†åˆ†è¾“å…¥éŸ³é¢‘æ— æ³•åšåˆ°Nä¸ªé€šé“å‡åˆ†ï¼Œè¾“å‡ºéŸ³é¢‘ä¼šå­˜åœ¨é•¿åº¦ä¸ä¸€è‡´" << endl;
 	}
 
 
-	//´ò¿ªÊä³öÎÄ¼ş
-	unique_ptr<filesystem::path[]> output_pcmfile = make_unique<filesystem::path[]>(chanel);//ËùÓĞÊä³öÎÄ¼şµÄ¾ø¶ÔÂ·¾¶
-	unique_ptr<ofstream[]> m_ofs = make_unique<ofstream[]>(chanel);//ËùÓĞÊä³öÎÄ¼şµÄÎÄ¼şÃèÊö·û
+	//æ‰“å¼€è¾“å‡ºæ–‡ä»¶
+	unique_ptr<filesystem::path[]> output_pcmfile = make_unique<filesystem::path[]>(chanel);//æ‰€æœ‰è¾“å‡ºæ–‡ä»¶çš„ç»å¯¹è·¯å¾„
+	unique_ptr<ofstream[]> m_ofs = make_unique<ofstream[]>(chanel);//æ‰€æœ‰è¾“å‡ºæ–‡ä»¶çš„æ–‡ä»¶æè¿°ç¬¦
 
 	auto target_path = ast::utils::create_format_directory(input_name_pcm_file.parent_path(), "output");;
 	for (size_t i = 0; i < chanel; i++) {
 		output_pcmfile[i] = filesystem::path(target_path) / (input_name_pcm_file.stem().string() + "_" + to_string(i + 1) + ".pcm");
 		m_ofs[i].open(output_pcmfile[i], ios_base::out | ios_base::binary);
-		printf("Êä³öÎÄ¼ş = %s\n", output_pcmfile[i].string().c_str());
+		printf("è¾“å‡ºæ–‡ä»¶ = %s\n", output_pcmfile[i].string().c_str());
 	}
 
-	//´¦ÀíÒôÆµ
+	//å¤„ç†éŸ³é¢‘
 	{
 		unique_lock<mutex> lock(m_readpcm_buffer_mutex);
 		while (m_ifs.peek() != EOF) {
 
 			memset(m_readpcm_buffer_common.get(), 0, audio_readsize_once);
-			size_t real_size = m_ifs.read(m_readpcm_buffer_common.get(), audio_readsize_once).gcount();//¶ÁÈ¡µÄÊı¾İĞ¡ÓÚ5120000 byte¡£
+			size_t real_size = m_ifs.read(m_readpcm_buffer_common.get(), audio_readsize_once).gcount();//è¯»å–çš„æ•°æ®å°äº5120000 byteã€‚
 
 			for (int sample = 0; sample < real_size / 2; sample++) {
 				m_ofs[sample % chanel].write((char*)((short*)m_readpcm_buffer_common.get() + sample), sizeof(short));
@@ -246,8 +246,8 @@ bool AudioAssistant::split_audio(const string&& audioPath, const int&& chanel)
 	}
 
 
-	cout << "²ğ·ÖÍê³É£¬½á¹ûÒÑÊä³öµ½" << output_pcmfile[0].parent_path() << endl;
-	//½áÊø¹Ø±ÕÎÄ¼ş
+	cout << "æ‹†åˆ†å®Œæˆï¼Œç»“æœå·²è¾“å‡ºåˆ°" << output_pcmfile[0].parent_path() << endl;
+	//ç»“æŸå…³é—­æ–‡ä»¶
 	for (size_t i = 0; i < chanel; i++) {
 		m_ofs[i].close();
 	}
@@ -260,17 +260,17 @@ SplitAudio::SplitAudio(const fs::path files, const int chanel)
 	
 	if (filesystem::is_directory(files))
 	{
-		//´ı´¦Àí
+		//å¾…å¤„ç†
 	}
 	else if (filesystem::is_regular_file(files))
 	{
-		if (chanel > 16 || chanel <= 1) { throw "´ı²ğ·ÖÒôÆµÍ¨µÀÊıÒì³£"; }
+		if (chanel > 16 || chanel <= 1) { throw "å¾…æ‹†åˆ†éŸ³é¢‘é€šé“æ•°å¼‚å¸¸"; }
 		
-		//´ò¿ªÊäÈëÎÄ¼ş
+		//æ‰“å¼€è¾“å…¥æ–‡ä»¶
 		ifstream m_ifs(files, ios_base::in | ios_base::binary);
-		if (!m_ifs.is_open()) { throw "ÊäÈëÒôÆµ´ò¿ªÊ§°Ü[SplitAudio::SplitAudio]"; }
+		if (!m_ifs.is_open()) { throw "è¾“å…¥éŸ³é¢‘æ‰“å¼€å¤±è´¥[SplitAudio::SplitAudio]"; }
 		
-		//´´½¨Êä³öÎÄ¼ş²¢´ò¿ª
+		//åˆ›å»ºè¾“å‡ºæ–‡ä»¶å¹¶æ‰“å¼€
 		for (int i = 0; i < chanel; i++)
 		{
 			std::string m_tmp = ast::utils::create_format_directory<true>(files.parent_path(), "splitOut","spout"+std::to_string(i)+".pcm");
@@ -279,9 +279,9 @@ SplitAudio::SplitAudio(const fs::path files, const int chanel)
 		}
 		
 		m_input_chanel = mv_audio_pool.size();
-		if (ast::utils::open_files(mv_audio_pool, v_ofs_handle) != 0) { throw "Êä³öÒôÆµ´ò¿ªÊ§°Ü[SplitAudio::SplitAudio]"; }
+		if (ast::utils::open_files(mv_audio_pool, v_ofs_handle) != 0) { throw "è¾“å‡ºéŸ³é¢‘æ‰“å¼€å¤±è´¥[SplitAudio::SplitAudio]"; }
 		
-		//ÉêÇë»º´æ
+		//ç”³è¯·ç¼“å­˜
 		{
 			m_readpcm_buffer_common = make_unique<char[]>(audio_readsize_once);
 			if (!m_readpcm_buffer_common) {
@@ -290,19 +290,19 @@ SplitAudio::SplitAudio(const fs::path files, const int chanel)
 		}
 	}
 	else {
-		cerr << "set_working_pathÂ·¾¶Òì³££¬·Ç³£¹æÎÄ¼ş£¬·ÇÎÄ¼ş¼Ğ" << endl;
+		cerr << "set_working_pathè·¯å¾„å¼‚å¸¸ï¼Œéå¸¸è§„æ–‡ä»¶ï¼Œéæ–‡ä»¶å¤¹" << endl;
 	}
 }
 
 bool SplitAudio::start_split()
 {
-	//´¦ÀíÒôÆµ
+	//å¤„ç†éŸ³é¢‘
 	m_ifs.seekg(0,ios_base::beg);
 	{
 		while (m_ifs.peek() != EOF) {
 
 			memset(m_readpcm_buffer_common.get(), 0, audio_readsize_once);
-			size_t real_size = m_ifs.read(m_readpcm_buffer_common.get(), audio_readsize_once).gcount();//¶ÁÈ¡µÄÊı¾İĞ¡ÓÚ5120000 byte¡£
+			size_t real_size = m_ifs.read(m_readpcm_buffer_common.get(), audio_readsize_once).gcount();//è¯»å–çš„æ•°æ®å°äº5120000 byteã€‚
 
 			for (long sample = 0; sample < real_size / 2; sample++) {
 				v_ofs_handle[sample % m_input_chanel].write((char*)((short*)m_readpcm_buffer_common.get() + sample), sizeof(short));
@@ -314,7 +314,7 @@ bool SplitAudio::start_split()
 
 
 
-//Î´ÍêÉÆ
+//æœªå®Œå–„
 bool AudioAssistant::cut_audio_timepoint(const string&& audioPath, const int&& chanel) {
 
 	long m_start = 0, m_end = 0;
@@ -324,36 +324,36 @@ bool AudioAssistant::cut_audio_timepoint(const string&& audioPath, const int&& c
 	std::filesystem::path output_name_of_pcm_file_p = "";
 
 
-	//33·Ö10Ãëµ½33·Ö30Ãë
-	m_start = 32000 * 1990 + 32 * 0;//Ãë+Î¢Ãë
-	m_end = 32000 * 2010 + 32 * 0;//Ãë+Î¢Ãë
+	//33åˆ†10ç§’åˆ°33åˆ†30ç§’
+	m_start = 32000 * 1990 + 32 * 0;//ç§’+å¾®ç§’
+	m_end = 32000 * 2010 + 32 * 0;//ç§’+å¾®ç§’
 
 
-	printf("ÊäÈë8Í¨µÀÒôÆµ\n");
+	printf("è¾“å…¥8é€šé“éŸ³é¢‘\n");
 	std::getline(std::cin, pcm_file);
 	intput_name_of_pcm_file_p = pcm_file;//C:\Users\zmzha\Music\locate.pcm
 	output_name_of_pcm_file_p = intput_name_of_pcm_file_p.parent_path() / (intput_name_of_pcm_file_p.stem().string() + "_cut.pcm");
 
 
 	if (!std::filesystem::exists(intput_name_of_pcm_file_p) || !std::filesystem::is_regular_file(intput_name_of_pcm_file_p)) {
-		printf("%s ²»´æÔÚ»òÕß²»ÊÇÒ»¸öÎÄ¼ş", intput_name_of_pcm_file_p.string().c_str());
+		printf("%s ä¸å­˜åœ¨æˆ–è€…ä¸æ˜¯ä¸€ä¸ªæ–‡ä»¶", intput_name_of_pcm_file_p.string().c_str());
 		return -1;
 	}
 
 
-	printf("Êä³öÎÄ¼şµÄÎ»ÖÃ%s\n", output_name_of_pcm_file_p.string().c_str());
+	printf("è¾“å‡ºæ–‡ä»¶çš„ä½ç½®%s\n", output_name_of_pcm_file_p.string().c_str());
 	std::ifstream i_fs(intput_name_of_pcm_file_p, std::ios_base::in | std::ios_base::binary);
 	std::ofstream o_fs(output_name_of_pcm_file_p, std::ios_base::out | std::ios_base::binary);//C:\Users\zmzha\Music\locate_cut.pcm
 
 #define INPUT_CHANEL 8
-	i_fs.seekg(m_start * INPUT_CHANEL, std::ios::beg);//ÉèÖÃ¶ÁÖ¸ÕëÎ»ÖÃÏà¶ÔÆğÊ¼Î»ÖÃÆ«ÒÆ  m_start×Ö½Ú
+	i_fs.seekg(m_start * INPUT_CHANEL, std::ios::beg);//è®¾ç½®è¯»æŒ‡é’ˆä½ç½®ç›¸å¯¹èµ·å§‹ä½ç½®åç§»  m_startå­—èŠ‚
 
 	short s1[INPUT_CHANEL] = { 0 };
 
 
 	while (1) {
 		if (i_fs.tellg() > m_end * INPUT_CHANEL) {
-			puts("ÒÑ´¦Àíµ½Î²¶Ëµã");
+			puts("å·²å¤„ç†åˆ°å°¾ç«¯ç‚¹");
 			break;
 		}
 
@@ -369,7 +369,7 @@ bool AudioAssistant::cut_audio_timepoint(const string&& audioPath, const int&& c
 }
 
 
-//»ñÈ¡³¤¶ÌÒôÆµµÄÎ»ÖÃ£¬·µ»ØÖµÊÇºÁÃë
+//è·å–é•¿çŸ­éŸ³é¢‘çš„ä½ç½®ï¼Œè¿”å›å€¼æ˜¯æ¯«ç§’
 long FindAudioPosition::get_shortaudio_position()
 {
 	if (!is_init_success) return -1;
@@ -405,20 +405,23 @@ string FindAudioPosition::get_shortaudio_position_str()
 	if (!m_has_found) return "can not find object in target audio";
 	char buffer[64] = {0};
 
-	sprintf_s(buffer, "%02d:%02d:%02d.%03d", (posi_ms / 1000) / 3600, (posi_ms / 1000) % 3600 / 60, (posi_ms / 1000) % 3600 % 60, posi_ms%1000); //½«ºÁÃëÊı×ª»»Îª×Ö·û´®
-	
+#ifdef _WIN32
+	sprintf_s(buffer, "%02d:%02d:%02d.%03d", (posi_ms / 1000) / 3600, (posi_ms / 1000) % 3600 / 60, (posi_ms / 1000) % 3600 % 60, posi_ms%1000); //å°†æ¯«ç§’æ•°è½¬æ¢ä¸ºå­—ç¬¦ä¸²
+#else
+	snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d.%03d", (posi_ms / 1000) / 3600, (posi_ms / 1000) % 3600 / 60, (posi_ms / 1000) % 3600 % 60, posi_ms % 1000);
+#endif
 
 	return buffer;
 }
 
-// Ê¹ÓÃKMPËã·¨ÔÚ³¤ÒôÆµÖĞ²éÕÒ¶ÌÒôÆµµÄÎ»ÖÃ
+// ä½¿ç”¨KMPç®—æ³•åœ¨é•¿éŸ³é¢‘ä¸­æŸ¥æ‰¾çŸ­éŸ³é¢‘çš„ä½ç½®
 int FindAudioPosition::findSubsequence(const short* longAudio, const short* shortAudio) 
 {
 	int n = actual_longaudio_length_read / 2;
 	int m = actual_shortaudio_length_read / 2;
 
 
-	// ¹¹½¨nextÊı×é
+	// æ„å»ºnextæ•°ç»„
 	vector<int> next(m, 0);
 	for (int i = 1, j = 0; i < m; i++) {
 		while (j > 0 && shortAudio[i] != shortAudio[j]) {
@@ -430,7 +433,7 @@ int FindAudioPosition::findSubsequence(const short* longAudio, const short* shor
 		next[i] = j;
 	}
 
-	// Ê¹ÓÃnextÊı×éÆ¥Åä³¤ÒôÆµºÍ¶ÌÒôÆµ
+	// ä½¿ç”¨nextæ•°ç»„åŒ¹é…é•¿éŸ³é¢‘å’ŒçŸ­éŸ³é¢‘
 	for (int i = 0, j = 0; i < n; i++) {
 		while (j > 0 && longAudio[i] != shortAudio[j]) {
 			j = next[j - 1];
@@ -443,7 +446,7 @@ int FindAudioPosition::findSubsequence(const short* longAudio, const short* shor
 		}
 	}
 
-	return -1; // ÕÒ²»µ½
+	return -1; // æ‰¾ä¸åˆ°
 }
 
 
@@ -451,9 +454,9 @@ FindAudioPosition::FindAudioPosition(const fs::path short_path, const fs::path l
 {
 	using namespace std;
 
-	//ÄÚ´æÉêÇë
+	//å†…å­˜ç”³è¯·
 	{
-		//Ö±½Ó¶ÁÈ¡ÕûÌõ¶ÌÒôÆµ¡£
+		//ç›´æ¥è¯»å–æ•´æ¡çŸ­éŸ³é¢‘ã€‚
 		m_short_audio_buffer = std::make_unique<char[]>(ShortAudioSize);
 		m_long_audio_buffer = std::make_unique<char[]>(LongAudioSize);
 		if (!m_short_audio_buffer || !m_long_audio_buffer) {
@@ -461,14 +464,14 @@ FindAudioPosition::FindAudioPosition(const fs::path short_path, const fs::path l
 		}
 	}
 	
-	//´ò¿ªÏà¹ØÒôÆµÎÄ¼ş£¬²¢¼ÇÂ¼Ò»Ğ©ÒôÆµ´óĞ¡µÈĞÅÏ¢
+	//æ‰“å¼€ç›¸å…³éŸ³é¢‘æ–‡ä»¶ï¼Œå¹¶è®°å½•ä¸€äº›éŸ³é¢‘å¤§å°ç­‰ä¿¡æ¯
 	{
 		if (!fs::is_regular_file(short_path) || !fs::is_regular_file(long_path))
 		{
 			throw "input file is not exist[FindAudioPosition::FindAudioPosition]";
 		}
 
-		//´ò¿ª³¤¶ÌÒôÆµ
+		//æ‰“å¼€é•¿çŸ­éŸ³é¢‘
 		ifstream ifs_short_audio(short_path, ios_base::in | ios_base::binary);
 		ifs_long_audio.open(long_path, ios_base::in | ios_base::binary | ios_base::ate);
 		if (!ifs_short_audio.is_open() || !ifs_long_audio.is_open()) {
@@ -488,7 +491,7 @@ FindAudioPosition::FindAudioPosition(const fs::path short_path, const fs::path l
 CutOrLengthenAudio::CutOrLengthenAudio(const fs::path original_path, const int chanel)
 {
 
-	//ÊäÈëÅĞ¶Ï
+	//è¾“å…¥åˆ¤æ–­
 	{
 		if (!fs::is_regular_file(original_path))
 		{
@@ -522,7 +525,7 @@ CutOrLengthenAudio::CutOrLengthenAudio(const fs::path original_path, const int c
 }
 
 
-//Êä³öÎÄ¼şÃû±ä¸üºÍÊ±¼äÏà¹Ø
+//è¾“å‡ºæ–‡ä»¶åå˜æ›´å’Œæ—¶é—´ç›¸å…³
 bool CutOrLengthenAudio::cut_op(const std::string& cut_time_str)
 {
 	long start_byte = 0, end_byte = 0;
@@ -593,7 +596,7 @@ bool CutOrLengthenAudio::cut_op_main(const long start_byte,const long end_byte)
 
 		ofs_output_audio.close();
 	}
-	else {//¶àÍ¨µÀ
+	else {//å¤šé€šé“
 		ifs_original_audio.seekg(start_byte * audio_chanel, std::ios_base::beg);
 		while (ifs_original_audio.peek() != EOF && length > 0) {
 			if (length < ReadAudioSize * audio_chanel)
@@ -655,7 +658,7 @@ bool MergeAudio::start_merge() {
 	
 	
 	
-	//ÉêÇën¿éÁÙÊ±ÄÚ´æ£¬ÓÃÓÚ´æ·ÅÊäÈë»º´æ
+	//ç”³è¯·nå—ä¸´æ—¶å†…å­˜ï¼Œç”¨äºå­˜æ”¾è¾“å…¥ç¼“å­˜
 	std::vector<std::unique_ptr<char[]>> v_tmp_buffer(m_num_of_material);
 	{
 		try {
@@ -670,10 +673,10 @@ bool MergeAudio::start_merge() {
 	}
 
 
-	//´ò¿ªÊäÈëÊä³öÎÄ¼ş
+	//æ‰“å¼€è¾“å…¥è¾“å‡ºæ–‡ä»¶
 	{
-		OPEN_ONE_FILE(m_ofs, m_default_output);//´ò¿ªÊä³öÎÄ¼ş
-		if (ast::utils::open_files(mv_audio_pool, v_ifs_handle))//´ò¿ªËùÓĞÊäÈëÎÄ¼ş£¬ÈôÊ§°ÜÔò¹Ø±ÕÖ®Ç°ËùÓĞµÄÎÄ¼ş
+		OPEN_ONE_FILE(m_ofs, m_default_output);//æ‰“å¼€è¾“å‡ºæ–‡ä»¶
+		if (ast::utils::open_files(mv_audio_pool, v_ifs_handle))//æ‰“å¼€æ‰€æœ‰è¾“å…¥æ–‡ä»¶ï¼Œè‹¥å¤±è´¥åˆ™å…³é—­ä¹‹å‰æ‰€æœ‰çš„æ–‡ä»¶
 		{
 			std::cerr << "open input file failed,in[MergeAudio::start_merge()] " << std::endl;
 			return false;
@@ -682,8 +685,8 @@ bool MergeAudio::start_merge() {
 	
 		
 
-	//¶ÁÈ¡5.12mbÎÄ¼şµ½ÄÚ´æ£¬ÔÙ´ÓÄÚ´æÖğ¸ö²Ù×÷¡£
-	long long min_real_read_size = audio_readsize_once;//¼ÇÂ¼¶ÁÈ¡µ½µÄ¶à¸öÎÄ¼şÖĞ£¬×îĞ¡µÄÄÇÒ»¸ö¡£
+	//è¯»å–5.12mbæ–‡ä»¶åˆ°å†…å­˜ï¼Œå†ä»å†…å­˜é€ä¸ªæ“ä½œã€‚
+	long long min_real_read_size = audio_readsize_once;//è®°å½•è¯»å–åˆ°çš„å¤šä¸ªæ–‡ä»¶ä¸­ï¼Œæœ€å°çš„é‚£ä¸€ä¸ªã€‚
 	while (min_real_read_size == audio_readsize_once)
 	{
 		
@@ -700,7 +703,7 @@ bool MergeAudio::start_merge() {
 			for (short num = 0; num < m_num_of_material; num++)
 			{
 				if (m_ofs.write(v_tmp_buffer.at(num).get() + cur, sampleSize).bad()) {
-					// Ğ´ÈëÊ§°Ü
+					// å†™å…¥å¤±è´¥
 					LOG(ERROR) << "write output pcm failed";
 				}
 			}
@@ -709,7 +712,7 @@ bool MergeAudio::start_merge() {
 	}
 
 	
-	//´¦ÀíÍê±Ï,ÊÍ·Å×ÊÔ´
+	//å¤„ç†å®Œæ¯•,é‡Šæ”¾èµ„æº
 	deinit();
 	LOG(INFO) << "merge success, file:" << m_default_output;
 	return true;
@@ -718,7 +721,7 @@ bool MergeAudio::start_merge() {
 
 bool MergeAudio::reset_output_file(fs::path new_output_file)
 {
-	fs::file_status status = fs::status(new_output_file.parent_path()); // »ñÈ¡ÎÄ¼ş×´Ì¬ĞÅÏ¢
+	fs::file_status status = fs::status(new_output_file.parent_path()); // è·å–æ–‡ä»¶çŠ¶æ€ä¿¡æ¯
 
 	if ((status.permissions() & fs::perms::owner_write) != fs::perms::none) {
 		m_default_output = new_output_file;

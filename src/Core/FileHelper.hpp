@@ -1,15 +1,20 @@
 #pragma once
 
+#ifdef _WIN32
+#include "windows.h"
+#include <conio.h>
+#else
+ 
+
+#endif
 
 #include <filesystem>
 #include <iostream>
 #include <vector>
 #include <string>
 #include <string.h>
-#include "windows.h"
-#include <sys\stat.h>
+#include <sys/stat.h>
 #include <fstream>
-#include <conio.h>
 #include <algorithm>
 #include <stdexcept>
 #include <climits>
@@ -19,7 +24,7 @@
 
 namespace fs = std::filesystem;
 
-//´ò¿ªÄ³Ò»¸öÎÄ¼ş
+//æ‰“å¼€æŸä¸€ä¸ªæ–‡ä»¶
 #define OPEN_ONE_FILE(m_ofs, filename) \
     { \
         m_ofs.open(filename, std::ios::binary | std::ios::out); \
@@ -36,15 +41,15 @@ namespace fs = std::filesystem;
 namespace ast::utils
 {
 
-	//ÕÒ³öÂ·¾¶ÏÂÖ¸¶¨ºó×ºµÄÎÄ¼şµ½ÈİÆ÷ÄÚ£¬ÒÑÍê½á
-	//ÈçºÎÅĞ¶ÏÊäÈëµÄÈİÆ÷ÊÇpath»¹ÊÇstring?
-	//str:´ıÑ°ÕÒÎÄ¼şµÄºó×ºÃû,Èç¹ûÒª»ñÈ¡ËùÓĞÎÄ¼şÃû´«Èë*
+	//æ‰¾å‡ºè·¯å¾„ä¸‹æŒ‡å®šåç¼€çš„æ–‡ä»¶åˆ°å®¹å™¨å†…ï¼Œå·²å®Œç»“
+	//å¦‚ä½•åˆ¤æ–­è¾“å…¥çš„å®¹å™¨æ˜¯pathè¿˜æ˜¯string?
+	//str:å¾…å¯»æ‰¾æ–‡ä»¶çš„åç¼€å,å¦‚æœè¦è·å–æ‰€æœ‰æ–‡ä»¶åä¼ å…¥*
 	template <typename T>
 	inline bool get_files_from_directory(const T& input_path, const char* ext_name, std::vector<fs::path>& v_output)
 	{
 		if constexpr (!std::is_constructible_v<fs::path, T>)
 		{
-			static_assert(std::is_constructible_v<fs::path, T>, "Only string and path types are supported.");//±àÒë½×¶ÎÅ×³ö
+			static_assert(std::is_constructible_v<fs::path, T>, "Only string and path types are supported.");//ç¼–è¯‘é˜¶æ®µæŠ›å‡º
 			return false;
 		}
 
@@ -79,7 +84,7 @@ namespace ast::utils
 				v_output.emplace_back(entry);
 			}
 			else if (entry.is_directory() && recursive) {
-				FindFilesWithExtension(entry, ext_name, v_output, recursive); // µİ¹éµ÷ÓÃ£¬´¦Àí×ÓÎÄ¼ş¼Ğ
+				FindFilesWithExtension(entry, ext_name, v_output, recursive); // é€’å½’è°ƒç”¨ï¼Œå¤„ç†å­æ–‡ä»¶å¤¹
 			}
 		}
 
@@ -101,12 +106,12 @@ namespace ast::utils
 
 
 	/*
-	Öğ¼¶´´½¨Ä¿Â¼,ÒÑÍêÉÆ£¬·ÅÆúÊ¹ÓÃTÄ£°å
+	é€çº§åˆ›å»ºç›®å½•,å·²å®Œå–„ï¼Œæ”¾å¼ƒä½¿ç”¨Tæ¨¡æ¿
 	
-	Ê¹ÓÃ·½·¨:create_format_directory(variable,"directory1","directory2","directory3")µÈ
+	ä½¿ç”¨æ–¹æ³•:create_format_directory(variable,"directory1","directory2","directory3")ç­‰
 
-	Èç¹û´«Èëtrue£¬Ôò×îºóÒ»¸ö²ÎÊı±íÊ¾´´½¨ÎÄ¼ş£¬Ä¬ÈÏfalse:×îºóÒ»¸ö²ÎÊı±íÊ¾´´½¨ÎÄ¼ş¼Ğ
-	È±Ïİ£ºifÓï¾äÌ«¶à¡£
+	å¦‚æœä¼ å…¥trueï¼Œåˆ™æœ€åä¸€ä¸ªå‚æ•°è¡¨ç¤ºåˆ›å»ºæ–‡ä»¶ï¼Œé»˜è®¤false:æœ€åä¸€ä¸ªå‚æ•°è¡¨ç¤ºåˆ›å»ºæ–‡ä»¶å¤¹
+	ç¼ºé™·ï¼šifè¯­å¥å¤ªå¤šã€‚
 	*/
 	template <bool is_file = false, typename... Args >
 	std::string create_format_directory(const fs::path& original_path, const std::string&& first, Args&&... rest)
@@ -118,7 +123,7 @@ namespace ast::utils
 
 		const auto & tmp_path = fs::path(original_path) / first;
 
-		if constexpr (sizeof...(Args) == 0) {//µİ¹é³ö¿Ú
+		if constexpr (sizeof...(Args) == 0) {//é€’å½’å‡ºå£
 			if (is_file == true) {
 				std::ofstream m_ofs_tmp(tmp_path, std::ios_base::trunc | std::ios_base::out);
 				if (m_ofs_tmp) { m_ofs_tmp.close(); return (tmp_path).string(); }
@@ -136,23 +141,23 @@ namespace ast::utils
 	
 
 	/*
-		ÊäÈëÒ»¸övector£¬´æ·ÅÁËÎÄ¼şÂ·¾¶¡£
-		Êä³öÊÇÒ»¸övector,´æ·Å¶ÔÓ¦ÕâĞ©ÎÄ¼şµÄÎÄ¼ş¾ä±ú
+		è¾“å…¥ä¸€ä¸ªvectorï¼Œå­˜æ”¾äº†æ–‡ä»¶è·¯å¾„ã€‚
+		è¾“å‡ºæ˜¯ä¸€ä¸ªvector,å­˜æ”¾å¯¹åº”è¿™äº›æ–‡ä»¶çš„æ–‡ä»¶å¥æŸ„
 	*/
 	inline long open_files(const std::vector<fs::path>& files, std::vector<std::ifstream>& file_handles)
 	{
 		const auto file_count = files.size();
-		//long long minimum_file_size = LLONG_MAX; // ×îĞ¡ÎÄ¼ş´óĞ¡µÄ³õÊ¼Öµ
+		//long long minimum_file_size = LLONG_MAX; // æœ€å°æ–‡ä»¶å¤§å°çš„åˆå§‹å€¼
 	
-		// Ê¹ÓÃ emplace_back º¯ÊıÌí¼Ó ifstream ¶ÔÏóµ½ vector ÈİÆ÷ÖĞ
+		// ä½¿ç”¨ emplace_back å‡½æ•°æ·»åŠ  ifstream å¯¹è±¡åˆ° vector å®¹å™¨ä¸­
 		for (std::size_t i = 0; i < file_count; ++i) {
 			file_handles.emplace_back(std::ifstream(files.at(i), std::ios::binary | std::ios_base::in | std::ios_base::ate));
-			// Èç¹ûÎÄ¼ş´ò¿ªÊ§°Ü£¬Ôò¼ÇÂ¼´íÎóĞÅÏ¢²¢·µ»Ø false
+			// å¦‚æœæ–‡ä»¶æ‰“å¼€å¤±è´¥ï¼Œåˆ™è®°å½•é”™è¯¯ä¿¡æ¯å¹¶è¿”å› false
 			if (!file_handles.at(i).is_open()) {
-				std::cerr << files.at(i) << " ´ò¿ªÊ§°Ü£¡" << std::endl;
+				std::cerr << files.at(i) << " æ‰“å¼€å¤±è´¥ï¼" << std::endl;
 				return -1;
 			}
-			// ¼ÆËã×îĞ¡ÎÄ¼ş´óĞ¡²¢ÖØÖÃÎÄ¼şÖ¸Õë
+			// è®¡ç®—æœ€å°æ–‡ä»¶å¤§å°å¹¶é‡ç½®æ–‡ä»¶æŒ‡é’ˆ
 			//minimum_file_size = std::min(minimum_file_size, static_cast<long long>(file_handles[i]->tellg()));
 			file_handles.at(i).seekg(0, std::ios_base::beg);
 		}
@@ -165,14 +170,14 @@ namespace ast::utils
 	inline long open_files(const std::vector<fs::path>& files, std::vector<std::ofstream>& file_handles)
 	{
 		const auto file_count = files.size();
-		//long long minimum_file_size = LLONG_MAX; // ×îĞ¡ÎÄ¼ş´óĞ¡µÄ³õÊ¼Öµ
+		//long long minimum_file_size = LLONG_MAX; // æœ€å°æ–‡ä»¶å¤§å°çš„åˆå§‹å€¼
 	
-		// Ê¹ÓÃ emplace_back º¯ÊıÌí¼Ó ifstream ¶ÔÏóµ½ vector ÈİÆ÷ÖĞ
+		// ä½¿ç”¨ emplace_back å‡½æ•°æ·»åŠ  ifstream å¯¹è±¡åˆ° vector å®¹å™¨ä¸­
 		for (std::size_t i = 0; i < file_count; ++i) {
 			file_handles.emplace_back(std::ofstream(files.at(i), std::ios::binary | std::ios_base::out));
-			// Èç¹ûÎÄ¼ş´ò¿ªÊ§°Ü£¬Ôò¼ÇÂ¼´íÎóĞÅÏ¢²¢·µ»Ø false
+			// å¦‚æœæ–‡ä»¶æ‰“å¼€å¤±è´¥ï¼Œåˆ™è®°å½•é”™è¯¯ä¿¡æ¯å¹¶è¿”å› false
 			if (!file_handles.at(i).is_open()) {
-				std::cerr << files.at(i) << " ´ò¿ªÊ§°Ü£¡" << std::endl;
+				std::cerr << files.at(i) << " æ‰“å¼€å¤±è´¥ï¼" << std::endl;
 				return -1;
 			}
 		}
@@ -184,7 +189,7 @@ namespace ast::utils
 
 
 
-	//ÊäÈëÒ»¸övector£¬ÅĞ¶ÏËùÓĞÎÄ¼şÊÇ·ñÊÇÕı³£ÎÄ¼ş
+	//è¾“å…¥ä¸€ä¸ªvectorï¼Œåˆ¤æ–­æ‰€æœ‰æ–‡ä»¶æ˜¯å¦æ˜¯æ­£å¸¸æ–‡ä»¶
 	template<typename T>
 	bool are_files_regular(const std::vector<T>& container) {
 		if constexpr (std::is_constructible_v<fs::path, T>) {
@@ -200,5 +205,3 @@ namespace ast::utils
 	}
 
 }
-
-

@@ -6,8 +6,12 @@
 #else
 #define CORE_API  __declspec(dllexport)
 #endif
-#else //CORE_API_IMPORT
 
+#include "windows.h"
+#include <conio.h>
+
+#else //CORE_API_IMPORT
+#define CORE_API __attribute__((visibility("default")))
 #endif //_WIN32
 
 
@@ -16,10 +20,11 @@
 #include <vector>
 #include <string>
 #include <string.h>
-#include "windows.h"
-#include <sys\stat.h>
+#include <mutex>
+
+#include <sys/stat.h>
 #include <fstream>
-#include <conio.h>
+
 #include <functional>
 #include <shared_mutex>
 #include <chrono>
@@ -31,10 +36,10 @@
 #include "TimeHelp.hpp"
 
 const int sampleRate = 16000;
-const int sampleSize = 2; // 16Î»Îª2×Ö½Ú
-constexpr static int audio_readsize_once = 1 * 256 * sizeof(short) * 10000;//¶ÁÒôÆµ»º´æbuffer
+const int sampleSize = 2; // 16ä½ä¸º2å­—èŠ‚
+constexpr static int audio_readsize_once = 1 * 256 * sizeof(short) * 10000;//è¯»éŸ³é¢‘ç¼“å­˜buffer
 /*
-²»´¦Àí¹ıĞ¡µÄÒôÆµ
+ä¸å¤„ç†è¿‡å°çš„éŸ³é¢‘
 
 */
 using namespace std;
@@ -44,8 +49,8 @@ using namespace std;
 #define CHECK_ERROR_RETURN(condition,note,errno)  if (condition) {LOG(ERROR) << note;return errno;} 
 #define CHECK_WARNING(condition,note) if (condition) {LOG(WARNING) << note;}       
 
-//ÒôÆµ×ª»»£¬½«pcm×ªwav£¬Ö§³Öµ¥ÌõºÍÅúÁ¿
-//ºóĞø»áÖ§³Ö¸ü¶àÒôÆµ¸ñÊ½
+//éŸ³é¢‘è½¬æ¢ï¼Œå°†pcmè½¬wavï¼Œæ”¯æŒå•æ¡å’Œæ‰¹é‡
+//åç»­ä¼šæ”¯æŒæ›´å¤šéŸ³é¢‘æ ¼å¼
 class AudioAssistant {
 public:
 	//AudioAssistant(ToolsCallback callback, void* callback_arg);
@@ -56,7 +61,7 @@ public:
 	CORE_API AudioAssistant& operator=(const AudioAssistant&) = delete;
 	CORE_API AudioAssistant& operator=(AudioAssistant&&) = delete;
 
-	//¹«¹²º¯Êı
+	//å…¬å…±å‡½æ•°
 	CORE_API bool wav_to_pcm();
 	CORE_API bool wav_to_pcm(const char* str);
 
@@ -68,14 +73,14 @@ public:
 	~AudioAssistant();
 
 private:
-	std::filesystem::path m_current_working_folder = "";//exeÎÄ¼şµ±Ç°Â·¾¶£¬´ıÓÃ
-	std::filesystem::path m_prehandled_file = "";//´ı´¦ÀíÎÄ¼şÃû³Æ£¬Ò»°ã±£´æ¼¯³É·½´«ÈëµÄÂ·¾¶
-	std::filesystem::path m_preoutput_file = "";//´ı´¦ÀíÎÄ¼şÃû³Æ£¬Ò»°ã±£´æ¼¯³É·½´«ÈëµÄÂ·¾¶
-	std::filesystem::path m_output_pcm_folder = "";//Ò»°ãÊÇ²úÎïµÄÂ·¾¶
+	std::filesystem::path m_current_working_folder = "";//exeæ–‡ä»¶å½“å‰è·¯å¾„ï¼Œå¾…ç”¨
+	std::filesystem::path m_prehandled_file = "";//å¾…å¤„ç†æ–‡ä»¶åç§°ï¼Œä¸€èˆ¬ä¿å­˜é›†æˆæ–¹ä¼ å…¥çš„è·¯å¾„
+	std::filesystem::path m_preoutput_file = "";//å¾…å¤„ç†æ–‡ä»¶åç§°ï¼Œä¸€èˆ¬ä¿å­˜é›†æˆæ–¹ä¼ å…¥çš„è·¯å¾„
+	std::filesystem::path m_output_pcm_folder = "";//ä¸€èˆ¬æ˜¯äº§ç‰©çš„è·¯å¾„
 
 
-	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//Ò»¸öÖÇÄÜÖ¸Õë£¬ÓÃÓÚ×î¿ªÊ¼ÉêÇë¹«ÓÃµÄ¶ÁÊı¾İ»º´æ¿Õ¼ä
-	mutable std::mutex m_readpcm_buffer_mutex;//m_readpcm_buffer_commonµÄËø£¬¸Ã±äÁ¿ÓÀÔ¶´¦ÓÚ¿É±ä×´Ì¬
+	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//ä¸€ä¸ªæ™ºèƒ½æŒ‡é’ˆï¼Œç”¨äºæœ€å¼€å§‹ç”³è¯·å…¬ç”¨çš„è¯»æ•°æ®ç¼“å­˜ç©ºé—´
+	mutable std::mutex m_readpcm_buffer_mutex;//m_readpcm_buffer_commonçš„é”ï¼Œè¯¥å˜é‡æ°¸è¿œå¤„äºå¯å˜çŠ¶æ€
 	std::unique_ptr<char[]> mp_tmp_input_cache[16];
 
 	bool check_suffix(const std::string&& input_pcm_pcmfile);
@@ -87,7 +92,7 @@ private:
 
 
 
-//ÓÃÓÚºÏ²¢ÒôÆµµÄÀà£¬³õÊ¼»¯µÄÊ±ºòÖ§³Ö´«Èë¶à¸öÒôÆµÎÄ¼ş»òÕß´«Ò»¸öÎÄ¼ş¼Ğ
+//ç”¨äºåˆå¹¶éŸ³é¢‘çš„ç±»ï¼Œåˆå§‹åŒ–çš„æ—¶å€™æ”¯æŒä¼ å…¥å¤šä¸ªéŸ³é¢‘æ–‡ä»¶æˆ–è€…ä¼ ä¸€ä¸ªæ–‡ä»¶å¤¹
 class MergeAudio
 {
 public:
@@ -99,12 +104,12 @@ public:
 	MergeAudio& operator=(MergeAudio&&) = delete;
 
 	CORE_API MergeAudio(fs::path working_path, const char* extension = ".pcm");
-	CORE_API void refilter_by_extension(const std::string& ext);//ÊäÈëÀ©Õ¹Ãû£¬½«ÎÄ¼ş³ØÀïµÄ²»ÊÇ¸ÃÀ©Õ¹ÃûµÄÎÄ¼şÌŞ³ı³Ø×Ó
-	CORE_API bool start_merge();//¿ªÊ¼ºÏ²¢°É
+	CORE_API void refilter_by_extension(const std::string& ext);//è¾“å…¥æ‰©å±•åï¼Œå°†æ–‡ä»¶æ± é‡Œçš„ä¸æ˜¯è¯¥æ‰©å±•åçš„æ–‡ä»¶å‰”é™¤æ± å­
+	CORE_API bool start_merge();//å¼€å§‹åˆå¹¶å§
 	CORE_API bool reset_output_file(fs::path new_output_file);
 
 
-	//ÊäÈë¶à¸öµ¥ÉùµÀµÄÒôÆµ£¬²¢ºÏ²¢
+	//è¾“å…¥å¤šä¸ªå•å£°é“çš„éŸ³é¢‘ï¼Œå¹¶åˆå¹¶
 	template<typename... Args>
 	bool choose_audio_and_merge(Args&&... args) {
 
@@ -131,19 +136,19 @@ private:
 
 
 	std::vector<fs::path> mv_audio_pool;
-	fs::path m_default_output;//Êä³öÎÄ¼şµÄÂ·¾¶£¬¿ÉÉèÖÃ£¬²»ÉèÖÃÎªµ±Ç°Ä¿Â¼
-	int m_num_of_material;//´ı´¦ÀíÒôÆµµÄÊıÁ¿£¬Ò²ÊÇÍ¨µÀÊı
-	std::vector<std::ifstream> v_ifs_handle; // ÓÃÓÚ¹ÜÀí ifstream ¶ÔÏóµÄ vector ÈİÆ÷
-	ofstream m_ofs;//Êä³öÎÄ¼şÃèÊö·û
+	fs::path m_default_output;//è¾“å‡ºæ–‡ä»¶çš„è·¯å¾„ï¼Œå¯è®¾ç½®ï¼Œä¸è®¾ç½®ä¸ºå½“å‰ç›®å½•
+	int m_num_of_material;//å¾…å¤„ç†éŸ³é¢‘çš„æ•°é‡ï¼Œä¹Ÿæ˜¯é€šé“æ•°
+	std::vector<std::ifstream> v_ifs_handle; // ç”¨äºç®¡ç† ifstream å¯¹è±¡çš„ vector å®¹å™¨
+	ofstream m_ofs;//è¾“å‡ºæ–‡ä»¶æè¿°ç¬¦
 };
 
 
 /*
-ÓÃÓÚÒôÆµ²ğ·ÖµÄÀà£¬ÔİÊ±Ö§³Öµ¥¸öÎÄ¼şµÄÇĞ·Ö¡£
+ç”¨äºéŸ³é¢‘æ‹†åˆ†çš„ç±»ï¼Œæš‚æ—¶æ”¯æŒå•ä¸ªæ–‡ä»¶çš„åˆ‡åˆ†ã€‚
 
-×îÖÕ¹¦ÄÜ£º
-¢Ù  ´«ÈëÒ»¸öÎÄ¼ş¼Ğ£¬Ñ°ÕÒ¸ÃÎÄ¼ş¼ĞÄÚËùÓĞµÄÒôÆµ£¬¶ÔÃ¿¸öÒôÆµÎÄ¼ş½øĞĞ²ğ·Ö¡£
-	²ğ·Ö½á¹ûÖ±½Ó·Åµ½µ±Ç°Ä¿Â¼£¬Èç¹ûÓĞÏàÍ¬Ãû³ÆµÄÏÈÇ¿ĞĞÉ¾³ı¡£
+æœ€ç»ˆåŠŸèƒ½ï¼š
+â‘   ä¼ å…¥ä¸€ä¸ªæ–‡ä»¶å¤¹ï¼Œå¯»æ‰¾è¯¥æ–‡ä»¶å¤¹å†…æ‰€æœ‰çš„éŸ³é¢‘ï¼Œå¯¹æ¯ä¸ªéŸ³é¢‘æ–‡ä»¶è¿›è¡Œæ‹†åˆ†ã€‚
+	æ‹†åˆ†ç»“æœç›´æ¥æ”¾åˆ°å½“å‰ç›®å½•ï¼Œå¦‚æœæœ‰ç›¸åŒåç§°çš„å…ˆå¼ºè¡Œåˆ é™¤ã€‚
 */
 class SplitAudio
 {
@@ -157,18 +162,18 @@ public:
 	SplitAudio& operator=(const SplitAudio&) = delete;
 	SplitAudio& operator=(SplitAudio&&) = delete;
 
-	void refilter_by_extension(const std::string ext);//ÊäÈëÀ©Õ¹Ãû£¬½«ÎÄ¼ş³ØÀïµÄ²»ÊÇ¸ÃÀ©Õ¹ÃûµÄÎÄ¼şÌŞ³ı³Ø×Ó
-	bool start_split();//¿ªÊ¼ÇĞ·Ö°É
+	void refilter_by_extension(const std::string ext);//è¾“å…¥æ‰©å±•åï¼Œå°†æ–‡ä»¶æ± é‡Œçš„ä¸æ˜¯è¯¥æ‰©å±•åçš„æ–‡ä»¶å‰”é™¤æ± å­
+	bool start_split();//å¼€å§‹åˆ‡åˆ†å§
 
 
 private:
 	void deinit();
 
-	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//Ò»¸öÖÇÄÜÖ¸Õë£¬ÓÃÓÚ×î¿ªÊ¼ÉêÇë¹«ÓÃµÄ¶ÁÊı¾İ»º´æ¿Õ¼ä
+	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//ä¸€ä¸ªæ™ºèƒ½æŒ‡é’ˆï¼Œç”¨äºæœ€å¼€å§‹ç”³è¯·å…¬ç”¨çš„è¯»æ•°æ®ç¼“å­˜ç©ºé—´
 	std::vector<fs::path> mv_audio_pool;
-	int m_input_chanel;//´ıÊäÈëÒôÆµµÄÊıÁ¿
-	std::vector<std::ofstream> v_ofs_handle; // ÓÃÓÚ¹ÜÀí ofstream ¶ÔÏóµÄ vector ÈİÆ÷
-	ifstream m_ifs;//ÊäÈëÎÄ¼şÃèÊö·û
+	int m_input_chanel;//å¾…è¾“å…¥éŸ³é¢‘çš„æ•°é‡
+	std::vector<std::ofstream> v_ofs_handle; // ç”¨äºç®¡ç† ofstream å¯¹è±¡çš„ vector å®¹å™¨
+	ifstream m_ifs;//è¾“å…¥æ–‡ä»¶æè¿°ç¬¦
 
 };
 
@@ -190,7 +195,7 @@ public:
 	FindAudioPosition& operator=(const FindAudioPosition&) = delete;
 	FindAudioPosition& operator=(FindAudioPosition&&) = delete;
 
-	long get_shortaudio_position();//»ñÈ¡¶ÌÒôÆµÔÚ³¤ÒôÆµµÄÎ»ÖÃ£¬·µ»ØÖµÊÇºÁÃë£¬½ö½öÖ§³Öµ¥Í¨µÀ
+	long get_shortaudio_position();//è·å–çŸ­éŸ³é¢‘åœ¨é•¿éŸ³é¢‘çš„ä½ç½®ï¼Œè¿”å›å€¼æ˜¯æ¯«ç§’ï¼Œä»…ä»…æ”¯æŒå•é€šé“
 	string get_shortaudio_position_str();
 
 
@@ -199,20 +204,20 @@ private:
 	int findSubsequence(const short* longAudio, const short* shortAudio);
 
 	std::unique_ptr<char[]> m_short_audio_buffer = nullptr;
-	constexpr static int ShortAudioSize = 3 * 32000;//¶ÌÒôÆµÖ»¶ÁÈ¡3Ãë
-	int actual_shortaudio_length_read = 0;//Êµ¼Ê¶ÁÈ¡µ½µÄ¶ÌÒôÆµ³¤¶È£¬Ò»°ãĞ¡ÓÚµÈÓÚShortAudioSize
+	constexpr static int ShortAudioSize = 3 * 32000;//çŸ­éŸ³é¢‘åªè¯»å–3ç§’
+	int actual_shortaudio_length_read = 0;//å®é™…è¯»å–åˆ°çš„çŸ­éŸ³é¢‘é•¿åº¦ï¼Œä¸€èˆ¬å°äºç­‰äºShortAudioSize
 
 	ifstream ifs_long_audio;
 	std::unique_ptr<char[]> m_long_audio_buffer = nullptr;
-	constexpr static int LongAudioSize = 30 * 1024 * 1024;//³¤ÒôÆµÃ¿´Î¶ÁÈ¡30mb
-	int actual_longaudio_length_read = 0;//Ã¿´ÎÊµ¼Êread³¤ÒôÆµ»ñµÃµÄ×Ö½Ú
-	long long_audio_total_size = 0;//³¤ÒôÆµµÄ×Ü³¤¶È
+	constexpr static int LongAudioSize = 30 * 1024 * 1024;//é•¿éŸ³é¢‘æ¯æ¬¡è¯»å–30mb
+	int actual_longaudio_length_read = 0;//æ¯æ¬¡å®é™…readé•¿éŸ³é¢‘è·å¾—çš„å­—èŠ‚
+	long long_audio_total_size = 0;//é•¿éŸ³é¢‘çš„æ€»é•¿åº¦
 
 	bool m_has_found = false;
 };
 
 
-//ÇĞÒôÆµµÄÀà£¬Ä¿Ç°ÊµÏÖµ¥Í¨µÀÒôÆµµÄÇĞ·Ö£¬¶àÍ¨µÀÔİÎ´ÊµÏÖ
+//åˆ‡éŸ³é¢‘çš„ç±»ï¼Œç›®å‰å®ç°å•é€šé“éŸ³é¢‘çš„åˆ‡åˆ†ï¼Œå¤šé€šé“æš‚æœªå®ç°
 class CutOrLengthenAudio
 {
 public:
@@ -230,17 +235,14 @@ public:
 private:
 	bool is_init_success = false;
 
-	constexpr static int ReadAudioSize = 5 * 1024 * 1024;//ÒôÆµÃ¿´Î¶ÁÈ¡5mb
+	constexpr static int ReadAudioSize = 5 * 1024 * 1024;//éŸ³é¢‘æ¯æ¬¡è¯»å–5mb
 	ifstream ifs_original_audio;
 	ofstream ofs_output_audio;
 	std::unique_ptr<char[]> m_original_audio_buffer = nullptr;
-	long m_long_audio_total_size = 0;//³¤ÒôÆµµÄ×Ü³¤¶È
+	long m_long_audio_total_size = 0;//é•¿éŸ³é¢‘çš„æ€»é•¿åº¦
 
 	bool get_start_and_end_ms(const std::string& time_str, long& start_ms, long& end_ms);
 	bool cut_op_main(const long start_byte, const long end_byte);
 
 	int audio_chanel = 1;
 };
-
-
-
