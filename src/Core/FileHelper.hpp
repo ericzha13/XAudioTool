@@ -23,20 +23,16 @@
 
 
 namespace fs = std::filesystem;
-
-//打开某一个文件
 #define OPEN_ONE_FILE(m_ofs, filename) \
-    { \
-        m_ofs.open(filename, std::ios::binary | std::ios::out); \
-        if (!m_ofs.is_open()) { \
-            std::cerr << "output audio file open failed " << filename << std::endl; \
-            return false; \
-        } else { \
-            std::cout << "output = " << filename << std::endl; \
-        } \
-    }
-
-
+{ \
+    m_ofs.open(filename, std::ios::binary | std::ios::out); \
+    if (!m_ofs.is_open()) { \
+        std::cerr << "output audio file open failed " << filename << std::endl; \
+        return false; \
+    } else { \
+        std::cout << "output = " << filename << std::endl; \
+    } \
+}
 //fileHelp
 namespace ast::utils
 {
@@ -69,7 +65,7 @@ namespace ast::utils
 			}
 		}
 
-		std::sort(v_output.begin(), v_output.end());
+		//std::sort(v_output.begin(), v_output.end());
 		return true;
 	}
 

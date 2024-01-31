@@ -90,7 +90,11 @@ private:
 
 
 
-
+enum class MergeAudioParam
+{
+	ResetOutputFile = 0,
+	SetAudioFormat,//过滤设置的格式以外格式的音频。.pcm?.mp4？如果不设置那么默认合并输入的所有音频(不过滤)。
+};
 
 //用于合并音频的类，初始化的时候支持传入多个音频文件或者传一个文件夹
 class MergeAudio
@@ -104,42 +108,51 @@ public:
 	MergeAudio& operator=(MergeAudio&&) = delete;
 
 	CORE_API MergeAudio(fs::path working_path, const char* extension = ".pcm");
-	CORE_API void refilter_by_extension(const std::string& ext);//输入扩展名，将文件池里的不是该扩展名的文件剔除池子
 	CORE_API bool start_merge();//开始合并吧
-	CORE_API bool reset_output_file(fs::path new_output_file);
+	CORE_API bool setparam(MergeAudioParam key, const string& value);
+	//考虑加入addaudio和ｃｌｅａｒ接口
 
+	template <typename... Args>
+	CORE_API MergeAudio(Args... args) {
+		processArgs(std::forward<Args>(args)...);
 
-	//输入多个单声道的音频，并合并
-	template<typename... Args>
-	bool choose_audio_and_merge(Args&&... args) {
-
-		(mv_audio_pool.emplace_back(std::forward<Args>(args)), ...);
-
-		m_num_of_material = mv_audio_pool.size();
-		if (!ast::utils::are_files_regular(mv_audio_pool)) {
-			deinit();
-			std::cerr << "some file isnot regular_file " << std::endl;
-			return false;
+		for (auto it : mv_input_pool) {
+			if (fs::is_regular_file(it)) {
+				mv_audio_pool_cache.emplace_back(it);
+			}
+			else {
+				CHECK_WARNING(!ast::utils::get_files_from_directory(it, "*", mv_audio_pool_cache), "get_files_from_directory" << it << "failed");
+			}
 		}
-
-		if (!start_merge()) {
-			deinit();
-			std::cerr << "start_merge failed " << std::endl;
-			return false;
-		}
-
-		return true;
+		m_num_of_material = mv_audio_pool_cache.size();
+		std::copy(mv_audio_pool_cache.begin(), mv_audio_pool_cache.end(), std::back_inserter(mv_audio_pool));
+		for (auto it : mv_audio_pool_cache) LOG(INFO) << it;
 	}
 
 private:
 	void deinit();
 
+	template <typename T>
+	void processArgs(T&& arg) {
+		m_default_output = fs::current_path() / ("merge_output_" + ast::utils::get_format_time(true) + ".pcm");
+		mv_input_pool.emplace_back(std::forward<T>(arg));
+	}
+
+	template <typename T, typename... Rest>
+	void processArgs(T&& arg, Rest&&... rest) {
+		mv_input_pool.emplace_back(std::forward<T>(arg));
+		processArgs(std::forward<Rest>(rest)...);
+	}
+
 
 	std::vector<fs::path> mv_audio_pool;
+	std::vector<fs::path> mv_audio_pool_cache;
+	std::vector<fs::path> mv_input_pool;
 	fs::path m_default_output;//输出文件的路径，可设置，不设置为当前目录
-	int m_num_of_material;//待处理音频的数量，也是通道数
+	size_t m_num_of_material = 0;//待处理音频的数量，也是通道数
 	std::vector<std::ifstream> v_ifs_handle; // 用于管理 ifstream 对象的 vector 容器
-	ofstream m_ofs;//输出文件描述符
+
+	std::mutex m_work_mutex;//
 };
 
 

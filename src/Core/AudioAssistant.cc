@@ -1,6 +1,6 @@
 #include "AudioAssistant.h"
 
-
+ 
 //ToolsCallback callback, void* callback_arg
 AudioAssistant::AudioAssistant()
 {
@@ -624,35 +624,10 @@ bool CutOrLengthenAudio::cut_op_main(const long start_byte,const long end_byte)
 }
 
 
-
-MergeAudio::MergeAudio(const fs::path working_path, const char* extension)
-	:m_default_output(working_path/("merge_output" + ast::utils::get_format_time(true) + ".pcm")),
-	m_num_of_material(0)
-{
-	
-	if (!ast::utils::FindFilesWithExtension(working_path, extension, mv_audio_pool)) {
-		LOG(WARNING) << "get_files_from_directory failed because of the input argu is not a folder";
-		throw "create MergeAudio object failed";
-	}
-	m_num_of_material = mv_audio_pool.size();
-}
-
-
-void MergeAudio::refilter_by_extension(const std::string& ext)
-{
-	CHECK_ERROR_THROW(ext.empty(), "The input string si empty");
-	CHECK_ERROR_THROW(ext.at(0) != '.', "The input string does not start with . Beginning");
-	mv_audio_pool.erase(
-		std::remove_if(mv_audio_pool.begin(), mv_audio_pool.end(), [&](const fs::path& p) {return p.extension() != ext; })
-		, mv_audio_pool.end());
-
-	m_num_of_material = mv_audio_pool.size();
-	
-
-}
-
 bool MergeAudio::start_merge() {
 
+	LogTraceFunction;
+	std::unique_lock<std::mutex> lock(m_work_mutex);
 	CHECK_ERROR_RETURN((m_num_of_material > 16 || m_num_of_material < 1),"unsupported chanel[2~16], merge failed!",false);
 	CHECK_WARNING(m_num_of_material == 1,"There is only one audio that has been processed, now it will be ignored");
 	
@@ -672,18 +647,18 @@ bool MergeAudio::start_merge() {
 		}
 	}
 
-
+	ofstream m_ofs;//输出文件描述符
 	//打开输入输出文件
 	{
 		OPEN_ONE_FILE(m_ofs, m_default_output);//打开输出文件
 		if (ast::utils::open_files(mv_audio_pool, v_ifs_handle))//打开所有输入文件，若失败则关闭之前所有的文件
 		{
-			std::cerr << "open input file failed,in[MergeAudio::start_merge()] " << std::endl;
+			LOG(ERROR) << "open input file failed ";
 			return false;
 		}
 	}
-	
-		
+
+
 
 	//读取5.12mb文件到内存，再从内存逐个操作。
 	long long min_real_read_size = audio_readsize_once;//记录读取到的多个文件中，最小的那一个。
@@ -714,18 +689,45 @@ bool MergeAudio::start_merge() {
 	
 	//处理完毕,释放资源
 	deinit();
+	m_ofs.close();
 	LOG(INFO) << "merge success, file:" << m_default_output;
 	return true;
 }
 
 
-bool MergeAudio::reset_output_file(fs::path new_output_file)
+bool MergeAudio::setparam(MergeAudioParam key, const string& value)
 {
-	fs::file_status status = fs::status(new_output_file.parent_path()); // 获取文件状态信息
+	LogTraceFunction;
+	std::unique_lock<std::mutex> lock(m_work_mutex);
+	switch (key)
+	{
+	case MergeAudioParam::ResetOutputFile: {
+		fs::file_status status = fs::status(fs::path(value).parent_path()); // 获取文件状态信息
+		if ((status.permissions() & fs::perms::owner_write) != fs::perms::none) {
+			m_default_output = value;
+			LOG(INFO) << "ResetOutputFile->" << value << " success~";
+			return true;
+		}
+		LOG(ERROR) << "ResetOutputFile->" << value << " failed!";
+	}
+		break;
+	case MergeAudioParam::SetAudioFormat: {
+		CHECK_ERROR_THROW(value.empty(), "The input string si empty");
+		CHECK_ERROR_THROW(value.at(0) != '.', "The input string does not start with . Beginning");
+		mv_audio_pool.clear();
+		std::copy(mv_audio_pool_cache.begin(), mv_audio_pool_cache.end(), std::back_inserter(mv_audio_pool));
 
-	if ((status.permissions() & fs::perms::owner_write) != fs::perms::none) {
-		m_default_output = new_output_file;
-		return true;
+		LOG(INFO) << "before SetAudioFormat: mv_audio_pool.size()=" << mv_audio_pool.size();
+		mv_audio_pool.erase(
+			std::remove_if(mv_audio_pool.begin(), mv_audio_pool.end(), [&](const fs::path& p) {return p.extension() != value; })
+			, mv_audio_pool.end());
+
+		m_num_of_material = mv_audio_pool.size();
+		LOG(INFO) << "after SetAudioFormat: mv_audio_pool.size()=" << mv_audio_pool.size();
+	}
+		break;
+	default:
+		break;
 	}
 
 	return false;
@@ -737,10 +739,8 @@ void MergeAudio::deinit()
 	{
 		v_ifs_handle.at(i).close();
 	}
-	m_ofs.close();
+
 	v_ifs_handle.clear();
-	mv_audio_pool.clear();
-	m_num_of_material = 0;
 }
 
 

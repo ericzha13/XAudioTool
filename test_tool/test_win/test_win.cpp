@@ -2,7 +2,7 @@
 //
 #define GLOG_NO_ABBREVIATED_SEVERITIES 0
 #include <iostream>
-#include "TimeHelp.hpp"
+#include "TimeHelp.hpp" 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include "AudioAssistant.h"
@@ -45,10 +45,13 @@ int main(int argc, char** argv)
 		
 		try
 		{
-			std::filesystem::path tt_folder = R"(C:\Users\ericzha\Music\TestData\)";
-			MergeAudio aa(tt_folder);
-			aa.refilter_by_extension(".pcm");
-			aa.start_merge();
+			std::filesystem::path tt_folder = R"(C:\Users\lsp\.ssh)";
+			std::filesystem::path tt_folder1 = R"(C:\Users\lsp\.dotnet)";
+			MergeAudio aa(tt_folder, tt_folder1);
+			aa.setparam(MergeAudioParam::SetAudioFormat,".pub");
+			
+			//aa.refilter_by_extension(".pcm");
+			//aa.start_merge();
 		}
 		catch (const std::exception& e)
 		{

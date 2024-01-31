@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <cstdio>
 #include <string>
@@ -7,18 +7,55 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+#include <glog/logging.h>
 
 
 
 #ifdef _WIN32
-#include "Windows.h"
+#include "Windows.h" 
 #else
 #include <ctime>
 #include <fcntl.h>
 #include <sys/time.h>
 #endif
 
-#define scope_delay_ms(ti)  ScopeDelay ST1(ti)
+
+
+class LoggerAux
+{
+public:
+	explicit LoggerAux(std::string_view func_name)
+		: m_func_name(func_name), m_start_time(std::chrono::steady_clock::now())
+	{
+		LOG(INFO) << m_func_name << "| enter";
+	}
+	~LoggerAux()
+	{
+		const auto duration = std::chrono::steady_clock::now() - m_start_time;
+		LOG(INFO) << m_func_name << "| leave " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << "ms";
+	}
+
+
+	LoggerAux(const LoggerAux&) = default;
+	LoggerAux(LoggerAux&&) = default;
+	LoggerAux& operator=(const LoggerAux&) = default;
+	LoggerAux& operator=(LoggerAux&&) = default;
+
+private:
+	std::string m_func_name;
+	std::chrono::time_point<std::chrono::steady_clock> m_start_time;
+};
+#define _Cat_(a, b) a##b
+#define _Cat(a, b) _Cat_(a, b)
+#define _CatVarNameWithLine(Var) _Cat(Var, __LINE__)
+#define LogTraceScope LoggerAux _CatVarNameWithLine(_func_aux_)
+#define LogTraceFunction LogTraceScope(__FUNCTION__)
+
+
+
+#define ScopeDelayInstance(ti, _func_aux) ScopeDelay _CatVarNameWithLine(_func_aux_)(ti)
+#define scope_delay_ms(ti)  ScopeDelayInstance(ti, _func_aux)
+//#define scope_delay_ms(ti)  ScopeDelay(ti)
 class ScopeDelay
 {
 public:
@@ -101,7 +138,7 @@ namespace ast::utils
 
 
 
-	// ½«Ê±·ÖÃë×Ö·û´®×ª»»³ÉÊ±¼ä±äÁ¿¡¢´ýÓÅ»¯ÅÐ¶Ï
+	// å°†æ—¶åˆ†ç§’å­—ç¬¦ä¸²è½¬æ¢æˆæ—¶é—´å˜é‡ã€å¾…ä¼˜åŒ–åˆ¤æ–­
 	inline long parse_time(std::string timeStr, int& hours, int& minutes, int& seconds, int& milliseconds) {
 		int mcount = count(timeStr.begin(), timeStr.end(), ':') + count(timeStr.begin(), timeStr.end(), '.');
 		if (mcount != 3) {
@@ -124,7 +161,7 @@ namespace ast::utils
 
 	inline std::string time_format(long ms) {
 		if (ms > LONG_MAX || ms < 0) {
-			printf("ºÁÃëÊýÒì³£");
+			printf("æ¯«ç§’æ•°å¼‚å¸¸");
 			return "";
 		}
 		int hour = ms / (60 * 60 * 1000);
@@ -140,7 +177,7 @@ namespace ast::utils
 
 
 
-	// ½«Ê±·ÖÃë×Ö·û´®×ª»»³ÉºÁÃëÊ±¼ä£¬±ØÐëÊÇhh:mm:ss.xxx¸ñÊ½µÄÊ±¼ä
+	// å°†æ—¶åˆ†ç§’å­—ç¬¦ä¸²è½¬æ¢æˆæ¯«ç§’æ—¶é—´ï¼Œå¿…é¡»æ˜¯hh:mm:ss.xxxæ ¼å¼çš„æ—¶é—´
 	inline long parse_time(std::string timeStr) {
 		int mcount = count(timeStr.begin(), timeStr.end(), ':') + count(timeStr.begin(), timeStr.end(), '.');
 		if (mcount != 3) {
@@ -162,7 +199,7 @@ namespace ast::utils
 
 
 	inline bool check_time_format(const std::string& time_str) {
-		std::regex time_regex(R"(\d{2}:\d{2}:\d{2}\.\d{3})");  // ÕýÔò±í´ïÊ½Æ¥Åä hh:mm:ss.xxx ¸ñÊ½
+		std::regex time_regex(R"(\d{2}:\d{2}:\d{2}\.\d{3})");  // æ­£åˆ™è¡¨è¾¾å¼åŒ¹é… hh:mm:ss.xxx æ ¼å¼
 		return std::regex_match(time_str, time_regex);
 	}
 
