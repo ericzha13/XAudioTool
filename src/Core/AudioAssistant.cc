@@ -733,6 +733,15 @@ bool MergeAudio::setparam(MergeAudioParam key, const string& value)
 	return false;
 }
 
+void MergeAudio::clear_audio() {
+	LogTraceFunction;
+	std::unique_lock<std::mutex> lock(m_work_mutex);
+
+	mv_audio_pool_cache.clear();
+	mv_audio_pool.clear();
+	mv_input_pool.clear();
+	m_num_of_material = 0;
+}
 void MergeAudio::deinit()
 {
 	for (int i = 0; i < v_ifs_handle.size(); i++)

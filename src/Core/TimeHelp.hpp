@@ -35,7 +35,6 @@ public:
 		LOG(INFO) << m_func_name << "| leave " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << "ms";
 	}
 
-
 	LoggerAux(const LoggerAux&) = default;
 	LoggerAux(LoggerAux&&) = default;
 	LoggerAux& operator=(const LoggerAux&) = default;

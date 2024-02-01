@@ -110,7 +110,17 @@ public:
 	CORE_API MergeAudio(fs::path working_path, const char* extension = ".pcm");
 	CORE_API bool start_merge();//开始合并吧
 	CORE_API bool setparam(MergeAudioParam key, const string& value);
-	//考虑加入addaudio和ｃｌｅａｒ接口
+	CORE_API void clear_audio();
+
+	template <typename... Args>
+	CORE_API bool add_audio(Args... args) {
+		LogTraceFunction;
+		std::unique_lock<std::mutex> lock(m_work_mutex);
+		process_add_audio(std::forward<Args>(args)...);
+		return true;
+	}
+
+	//考虑加入addaudio和ｃｌｅａｒ接口,标志位，是否初始化成功
 
 	template <typename... Args>
 	CORE_API MergeAudio(Args... args) {
@@ -126,15 +136,39 @@ public:
 		}
 		m_num_of_material = mv_audio_pool_cache.size();
 		std::copy(mv_audio_pool_cache.begin(), mv_audio_pool_cache.end(), std::back_inserter(mv_audio_pool));
+		m_default_output = fs::current_path() / ("merge_output_" + ast::utils::get_format_time(true) + ".pcm");
 		for (auto it : mv_audio_pool_cache) LOG(INFO) << it;
 	}
 
 private:
 	void deinit();
 
+	template<typename T>
+	void process_add_audio(T&& arg) {
+		if (fs::is_regular_file(arg)) {
+			mv_audio_pool_cache.emplace_back(arg);
+		}
+		else {
+			CHECK_WARNING(!ast::utils::get_files_from_directory(arg, "*", mv_audio_pool_cache), "get_files_from_directory" << arg << "failed");
+		}
+		return;
+	}
+
+	template <typename T, typename... Args>
+	void process_add_audio(T&& arg, Args&&... rest) {
+		if (fs::is_regular_file(arg)) {
+			mv_audio_pool_cache.emplace_back(arg);
+		}
+		else {
+			CHECK_WARNING(!ast::utils::get_files_from_directory(arg, "*", mv_audio_pool_cache), "get_files_from_directory" << arg << "failed");
+		}
+		process_add_audio(std::forward<Args>(rest)...);
+		return;
+	}
+
+
 	template <typename T>
 	void processArgs(T&& arg) {
-		m_default_output = fs::current_path() / ("merge_output_" + ast::utils::get_format_time(true) + ".pcm");
 		mv_input_pool.emplace_back(std::forward<T>(arg));
 	}
 

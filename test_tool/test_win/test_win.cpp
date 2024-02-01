@@ -49,6 +49,7 @@ int main(int argc, char** argv)
 			std::filesystem::path tt_folder1 = R"(C:\Users\lsp\.dotnet)";
 			MergeAudio aa(tt_folder, tt_folder1);
 			aa.setparam(MergeAudioParam::SetAudioFormat,".pub");
+			aa.add_audio(R"(C:\Code\MaaAssistantArknights-4.28.8\MAA.sln)");
 			
 			//aa.refilter_by_extension(".pcm");
 			//aa.start_merge();
