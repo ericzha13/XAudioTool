@@ -21,6 +21,7 @@
 #include <string>
 #include <string.h>
 #include <mutex>
+#include <queue>
 
 #include <sys/stat.h>
 #include <fstream>
@@ -94,6 +95,14 @@ enum class MergeAudioParam
 {
 	ResetOutputFile = 0,
 	SetAudioFormat,//过滤设置的格式以外格式的音频。.pcm?.mp4？如果不设置那么默认合并输入的所有音频(不过滤)。
+};
+
+enum class SplitAudioParam
+{
+	ResetOutputFolder = 0,
+	SetAudioFormat,//过滤设置的格式以外格式的音频。.pcm?.mp4？如果不设置那么默认合并输入的所有音频(不过滤)。
+	SetAudioChanel,
+	SetAudioName,
 };
 
 //用于合并音频的类，初始化的时候支持传入多个音频文件或者传一个文件夹
@@ -194,34 +203,43 @@ private:
 用于音频拆分的类，暂时支持单个文件的切分。
 
 最终功能：
-①  传入一个文件夹，寻找该文件夹内所有的音频，对每个音频文件进行拆分。
-	拆分结果直接放到当前目录，如果有相同名称的先强行删除。
 */
 class SplitAudio
 {
 public:
 	~SplitAudio() = default;
 	SplitAudio() = delete;
-	SplitAudio(const fs::path files, const int chanel);
+	SplitAudio(const fs::path files);
 
 	SplitAudio(const SplitAudio&) = delete;
 	SplitAudio(SplitAudio&&) = delete;
 	SplitAudio& operator=(const SplitAudio&) = delete;
 	SplitAudio& operator=(SplitAudio&&) = delete;
 
-	void refilter_by_extension(const std::string ext);//输入扩展名，将文件池里的不是该扩展名的文件剔除池子
-	bool start_split();//开始切分吧
-
+	bool set_param(SplitAudioParam key,const string& value);
 
 private:
-	void deinit();
+	void working_proc();
+	void reset();
+
+private:
+	
 
 	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//一个智能指针，用于最开始申请公用的读数据缓存空间
 	std::vector<fs::path> mv_audio_pool;
 	int m_input_chanel;//待输入音频的数量
 	std::vector<std::ofstream> v_ofs_handle; // 用于管理 ofstream 对象的 vector 容器
 	ifstream m_ifs;//输入文件描述符
+	int m_chanel = 2;
+	fs::path output_folder = fs::current_path();
+	std::queue<fs::path> m_input_file_queue;
 
+	
+	mutable std::mutex m_mutex;
+	std::thread m_working_thread;
+	std::atomic_bool m_thread_exit = false;
+	std::atomic_bool m_running = false;
+	std::condition_variable m_msg_cond;
 };
 
 

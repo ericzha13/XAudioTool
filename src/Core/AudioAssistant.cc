@@ -255,31 +255,13 @@ bool AudioAssistant::split_audio(const string&& audioPath, const int&& chanel)
 	return 0;
 }
 
-SplitAudio::SplitAudio(const fs::path files, const int chanel)
+SplitAudio::SplitAudio(const fs::path files)
 {
 	
-	if (filesystem::is_directory(files))
+	if (filesystem::is_regular_file(files))
 	{
-		//待处理
-	}
-	else if (filesystem::is_regular_file(files))
-	{
-		if (chanel > 16 || chanel <= 1) { throw "待拆分音频通道数异常"; }
-		
-		//打开输入文件
-		ifstream m_ifs(files, ios_base::in | ios_base::binary);
-		if (!m_ifs.is_open()) { throw "输入音频打开失败[SplitAudio::SplitAudio]"; }
-		
-		//创建输出文件并打开
-		for (int i = 0; i < chanel; i++)
-		{
-			std::string m_tmp = ast::utils::create_format_directory<true>(files.parent_path(), "splitOut","spout"+std::to_string(i)+".pcm");
-			if (m_tmp != "") { mv_audio_pool.emplace_back(m_tmp); }
-			else { std::cout << "some file open failed " << std::endl; }
-		}
-		
-		m_input_chanel = mv_audio_pool.size();
-		if (ast::utils::open_files(mv_audio_pool, v_ofs_handle) != 0) { throw "输出音频打开失败[SplitAudio::SplitAudio]"; }
+		if (m_chanel > 16 || m_chanel <= 1) { throw "待拆分音频通道数异常"; }
+		m_input_file_queue.emplace(std::move(files));
 		
 		//申请缓存
 		{
@@ -288,30 +270,124 @@ SplitAudio::SplitAudio(const fs::path files, const int chanel)
 				throw "m_readpcm_buffer_common buffer allocated failed";
 			}
 		}
+
+		m_working_thread = std::thread(&SplitAudio::working_proc(), this);
 	}
 	else {
-		cerr << "set_working_path路径异常，非常规文件，非文件夹" << endl;
+		cerr << "The input parameter is not a regular file" << endl;
 	}
 }
 
-bool SplitAudio::start_split()
+bool SplitAudio::set_param(SplitAudioParam key, const string& value) 
 {
-	//处理音频
-	m_ifs.seekg(0,ios_base::beg);
+	switch (key)
 	{
-		while (m_ifs.peek() != EOF) {
-
-			memset(m_readpcm_buffer_common.get(), 0, audio_readsize_once);
-			size_t real_size = m_ifs.read(m_readpcm_buffer_common.get(), audio_readsize_once).gcount();//读取的数据小于5120000 byte。
-
-			for (long sample = 0; sample < real_size / 2; sample++) {
-				v_ofs_handle[sample % m_input_chanel].write((char*)((short*)m_readpcm_buffer_common.get() + sample), sizeof(short));
-			}
+	case SplitAudioParam::ResetOutputFolder: {
+		if (fs::is_directory(value)) {
+			output_folder = value;
+			LOG(INFO) << "outputFolder set to " << value << " success";
+			return true;
+		}
+		LOG(WARNING) << "outputFolder set to " << value << " failed, input is not a folder";
+	}
+		break;
+	case SplitAudioParam::SetAudioFormat: {
+		return true;
+	}
+		break;
+	case SplitAudioParam::SetAudioChanel: {
+		const int temp_chanel = std::stoi(value);
+		if (temp_chanel > 0 && temp_chanel <= 32) {
+			m_chanel = temp_chanel;
+			LOG(INFO) << "AudioChanel is successly set to " << value;
+			return true;
+		}
+		LOG(INFO) << "AudioChanel set to " << value <<" failed";
+	}
+		break;
+	case SplitAudioParam::SetAudioName: {
+		if (fs::is_regular_file(value)) {
+			input_file = value;
 		}
 	}
-	return true;
+	default:
+		break;
+	}
+	return false;
 }
 
+void SplitAudio::working_proc()
+{
+	LogTraceFunction;
+	while (true) {
+		std::unique_lock<std::mutex> lock(m_mutex);
+		if (m_thread_exit) {
+			m_running = false;
+			return;
+		}
+
+
+		m_running = true;
+		if (m_input_file_queue.empty()) {
+			m_msg_cond.wait(lock);
+			continue;
+		}
+		const auto input_file = m_input_file_queue.front();
+		m_input_file_queue.pop();
+
+
+		{
+			//开始工作
+			m_ifs.open(input_file, ios_base::in | ios_base::binary);
+			if (!m_ifs.is_open()) { LOG(ERROR) << "file: " << input_file << "open failed"; continue; }
+
+			//创建输出文件并打开
+			bool is_open_outputfile_success = true;
+			for (int i = 0; i < m_chanel; i++)
+			{
+				std::string m_tmp = ast::utils::create_format_directory<true>(input_file.parent_path() / input_file.filename(), "splitOut", "spout" + std::to_string(i) + ".pcm");
+				if (m_tmp != "") { mv_audio_pool.emplace_back(m_tmp); }
+				else { LOG(ERROR) << "some outputfile create failed "; reset(); is_open_outputfile_success = false;}
+			}
+			if (!is_open_outputfile_success)continue;
+
+			m_input_chanel = mv_audio_pool.size();
+			if (ast::utils::open_files(mv_audio_pool, v_ofs_handle) != 0) { 
+				LOG(ERROR) << "some outputfile open failed ";
+				reset();
+				continue;
+			}
+
+
+			//处理音频
+			m_ifs.seekg(0, ios_base::beg);
+			{
+				while (m_ifs.peek() != EOF) {
+
+					memset(m_readpcm_buffer_common.get(), 0, audio_readsize_once);
+					size_t real_size = m_ifs.read(m_readpcm_buffer_common.get(), audio_readsize_once).gcount();//读取的数据小于5120000 byte。
+
+					for (long sample = 0; sample < real_size / 2; sample++) {
+						v_ofs_handle[sample % m_input_chanel].write((char*)((short*)m_readpcm_buffer_common.get() + sample), sizeof(short));
+					}
+				}
+			}
+			reset();
+			LOG(INFO) << "split file " << input_file << " success~";
+		}
+	}
+}
+
+void SplitAudio::reset()
+{
+	m_ifs.close();
+	for (auto it = 0;it < v_ofs_handle.size(); it++) {
+		v_ofs_handle.at(it).close();
+	}
+	mv_audio_pool.clear();
+	v_ofs_handle.clear();
+	m_input_chanel = 0;
+}
 
 
 //未完善
@@ -654,6 +730,7 @@ bool MergeAudio::start_merge() {
 		if (ast::utils::open_files(mv_audio_pool, v_ifs_handle))//打开所有输入文件，若失败则关闭之前所有的文件
 		{
 			LOG(ERROR) << "open input file failed ";
+			m_ofs.close();
 			return false;
 		}
 	}
@@ -693,6 +770,8 @@ bool MergeAudio::start_merge() {
 	LOG(INFO) << "merge success, file:" << m_default_output;
 	return true;
 }
+
+
 
 
 bool MergeAudio::setparam(MergeAudioParam key, const string& value)
