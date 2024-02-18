@@ -29,6 +29,7 @@
 #include <functional>
 #include <shared_mutex>
 #include <chrono>
+#include <thread>
 
 #include <glog/logging.h>
 #include "FileHelper.hpp"
@@ -43,7 +44,7 @@ constexpr static int audio_readsize_once = 1 * 256 * sizeof(short) * 10000;//读
 不处理过小的音频
 
 */
-using namespace std;
+//using namespace std;
 
 
 #define CHECK_ERROR_THROW(condition,note)  if (condition) {LOG(ERROR) << note;throw note;}       
@@ -206,10 +207,17 @@ private:
 */
 class SplitAudio
 {
+private:
+	struct FileItem {
+		fs::path FilePath = "";
+		unsigned int Chanel = 0;
+		std::string FileFormat = ".pcm";
+	};
+	std::queue<FileItem> m_msg_queue;
 public:
-	~SplitAudio() = default;
-	SplitAudio() = delete;
-	SplitAudio(const fs::path files);
+	~SplitAudio();
+	SplitAudio();
+	SplitAudio(const FileItem files);
 
 	SplitAudio(const SplitAudio&) = delete;
 	SplitAudio(SplitAudio&&) = delete;
@@ -217,29 +225,33 @@ public:
 	SplitAudio& operator=(SplitAudio&&) = delete;
 
 	bool set_param(SplitAudioParam key,const string& value);
+	bool add_audio(FileItem item);
 
 private:
 	void working_proc();
 	void reset();
 
 private:
-	
-
 	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//一个智能指针，用于最开始申请公用的读数据缓存空间
 	std::vector<fs::path> mv_audio_pool;
 	int m_input_chanel;//待输入音频的数量
-	std::vector<std::ofstream> v_ofs_handle; // 用于管理 ofstream 对象的 vector 容器
+	std::vector<std::ofstream> v_ofs_handle; //用于管理 ofstream 对象的 vector 容器
 	ifstream m_ifs;//输入文件描述符
 	int m_chanel = 2;
-	fs::path output_folder = fs::current_path();
+	fs::path output_folder = "";
+
+
 	std::queue<fs::path> m_input_file_queue;
+	
+	std::mutex m_msg_mutex;
+	
 
 	
 	mutable std::mutex m_mutex;
 	std::thread m_working_thread;
 	std::atomic_bool m_thread_exit = false;
 	std::atomic_bool m_running = false;
-	std::condition_variable m_msg_cond;
+	std::condition_variable m_msg_cond;//在条件满足时执行，而不是一直忙等待
 };
 
 

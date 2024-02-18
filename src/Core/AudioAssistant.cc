@@ -5,7 +5,7 @@
 AudioAssistant::AudioAssistant()
 {
 	//产生赋值和一些初始化
-	m_current_working_folder = filesystem::current_path();
+	m_current_working_folder = fs::current_path();
 	m_output_pcm_folder = m_current_working_folder / "output";//有些功能需要输出大量音频，放到同一级路径不合适，此处放到同一级目录的out文件夹下
 
 	//if (!filesystem::is_directory(m_output_pcm_folder / "out")) {
@@ -13,36 +13,36 @@ AudioAssistant::AudioAssistant()
 	//}
 
 	//分配5.12mb的空间,用于通用的读文件缓存buffer
-	m_readpcm_buffer_common = make_unique<char[]>(audio_readsize_once + 1);
+	m_readpcm_buffer_common = std::make_unique<char[]>(audio_readsize_once + 1);
 
 	for (int i = 0; i < 16; i++) {
-		mp_tmp_input_cache[i] = make_unique<char[]>(2 * 1024 * 1024);
+		mp_tmp_input_cache[i] = std::make_unique<char[]>(2 * 1024 * 1024);
 	}
 }
 
 //传入默认路径或默认待处理的文件
-AudioAssistant::AudioAssistant(const string res)
+AudioAssistant::AudioAssistant(const std::string res)
 {
-	if (filesystem::is_directory(res)) {
+	if (fs::is_directory(res)) {
 		m_current_working_folder = res;
 		m_output_pcm_folder = m_current_working_folder / "output";//有些功能需要输出大量音频，放到同一级路径不合适，此处放到同一级目录的out文件夹下
 		ast::utils::create_format_directory(m_current_working_folder, "output");
 	}
-	else if (filesystem::is_regular_file(res))
+	else if (fs::is_regular_file(res))
 	{
 		m_prehandled_file = res;
 	}
 	else {
-		m_current_working_folder = filesystem::current_path();
+		m_current_working_folder = fs::current_path();
 		m_output_pcm_folder = m_current_working_folder / "output";//有些功能需要输出大量音频，放到同一级路径不合适，此处放到同一级目录的out文件夹下
 	}
 
-	m_readpcm_buffer_common = make_unique<char[]>(audio_readsize_once + 1);
+	m_readpcm_buffer_common = std::make_unique<char[]>(audio_readsize_once + 1);
 
 
 	//申请中间缓存空间，用于读文件
 	for (int i = 0; i < 16; i++) {
-		mp_tmp_input_cache[i] = make_unique<char []>(2*1024*1024);
+		mp_tmp_input_cache[i] = std::make_unique<char []>(2*1024*1024);
 	}
 }
 
@@ -66,13 +66,13 @@ bool AudioAssistant::wav_to_pcm(const char* str)
 	if (!check_suffix(str)) { return false; }
 
 
-	ifstream ifs(str, ios_base::in | ios_base::binary);
-	ifs.seekg(44, ios_base::beg);
+	std::ifstream ifs(str, std::ios_base::in | std::ios_base::binary);
+	ifs.seekg(44, std::ios_base::beg);
 
 
-	filesystem::path tmp_path = str;
-	ofstream m_ofs(tmp_path.parent_path() / (tmp_path.stem().string() + ".pcm"), ios::binary | ios::out);
-	unique_lock<mutex> lock(m_readpcm_buffer_mutex);
+	fs::path tmp_path = str;
+	std::ofstream m_ofs(tmp_path.parent_path() / (tmp_path.stem().string() + ".pcm"), std::ios::binary | std::ios::out);
+	std::unique_lock<std::mutex> lock(m_readpcm_buffer_mutex);
 	while (ifs.peek() != EOF) {
 		//每次读取5.12MB
 		memset(m_readpcm_buffer_common.get(), 0, audio_readsize_once);
@@ -86,7 +86,7 @@ bool AudioAssistant::wav_to_pcm(const char* str)
 		m_ofs.write(m_readpcm_buffer_common.get(), audio_readsize_once);
 	}
 
-	cout << tmp_path.string() << "转为pcm格式成功" << endl;
+	std::cout << tmp_path.string() << "转为pcm格式成功" << std::endl;
 	m_ofs.close();
 	ifs.close();
 
@@ -103,20 +103,20 @@ bool AudioAssistant::wav_to_pcm()
 
 
 //判断文件后缀名是否和实际二进制头部数据一致，防止有些音频文件虽然是.wav结尾，但是本质是pcm格式
-bool AudioAssistant::check_suffix(const string&& input_pcm_pcmfile)
+bool AudioAssistant::check_suffix(const std::string&& input_pcm_pcmfile)
 {
-	if (!filesystem::is_regular_file(input_pcm_pcmfile))
+	if (!fs::is_regular_file(input_pcm_pcmfile))
 	{
 		printf("ERR输入音频[%s]不存在或输入为空，或不是常规文件\n", input_pcm_pcmfile.c_str());
 		return false;
 	}
-	else if (filesystem::file_size(input_pcm_pcmfile) < 44)
+	else if (fs::file_size(input_pcm_pcmfile) < 44)
 	{
 		printf("输入文件%s大小不足44字节，函数返回\n", input_pcm_pcmfile.c_str());
 		return false;
 	}
 
-	filesystem::path tmp_path = input_pcm_pcmfile;
+	fs::path tmp_path = input_pcm_pcmfile;
 	bool is_wav_fuffix = false;
 
 	if (tmp_path.extension().string() == ".wav" ||
@@ -138,9 +138,9 @@ bool AudioAssistant::check_suffix(const string&& input_pcm_pcmfile)
 	//wav格式的3次ID检测0~3  12~15  36~39
 	//wav格式，开头不是RIFF或者.  非wav格式,开头却是RIFF会返回错误
 	//wav格式，开头是RIFF.       非wav格式,开头不是RIFF会返回正确
-	ifstream ifs(input_pcm_pcmfile, ios_base::in | ios_base::binary);
+	std::ifstream ifs(input_pcm_pcmfile, std::ios_base::in | std::ios_base::binary);
 	if (!ifs.is_open()) {
-		cerr << input_pcm_pcmfile << "在check_suffix函数中打开失败" << endl;
+		std::cerr << input_pcm_pcmfile << "在check_suffix函数中打开失败" << std::endl;
 		return false;
 	}
 	char tmp[5] = { 0 };
@@ -175,22 +175,22 @@ bool AudioAssistant::check_suffix(const string&& input_pcm_pcmfile)
 
 
 //设置路径，支持string或者path类型并保存变量，其他类型不支持，废弃
-bool AudioAssistant::set_target_path_or_file(const string&& str)
+bool AudioAssistant::set_target_path_or_file(const std::string&& str)
 {
-	if (filesystem::is_directory(str))
+	if (fs::is_directory(str))
 	{
 		m_current_working_folder = str;
 		m_output_pcm_folder = m_current_working_folder / "output";
 		ast::utils::create_format_directory(m_current_working_folder, "output");
 	}
-	else if (filesystem::is_regular_file(str))
+	else if (fs::is_regular_file(str))
 	{
 		m_prehandled_file = str;
 		m_preoutput_file = ast::utils::create_format_directory<true>(m_prehandled_file, "output", m_prehandled_file.stem().string() + "_out.pcm");
-		if (m_preoutput_file == "")cerr << "输出文件设置异常，->set_target_path_or_file" << endl;
+		if (m_preoutput_file == "")std::cerr << "输出文件设置异常，->set_target_path_or_file" << std::endl;
 	}
 	else {
-		cerr << "set_working_path路径异常，非常规文件，非文件夹" << endl;
+		std::cerr << "set_working_path路径异常，非常规文件，非文件夹" << std::endl;
 		return false;
 	}
 
@@ -202,12 +202,12 @@ bool AudioAssistant::set_target_path_or_file(const string&& str)
 
 
 //把音频拆分成N个通道
-bool AudioAssistant::split_audio(const string&& audioPath, const int&& chanel)
+bool AudioAssistant::split_audio(const std::string&& audioPath, const int&& chanel)
 {
 
-	if (chanel > 16 || chanel <= 1) { cout << "待拆分音频通道数异常" << endl; return false; }
-	filesystem::path input_name_pcm_file = audioPath;
-	if (!filesystem::is_regular_file(input_name_pcm_file)) { cerr << input_name_pcm_file << "不是一个文件或文件不存在" << audioPath << endl;  return false; }
+	if (chanel > 16 || chanel <= 1) { std::cout << "待拆分音频通道数异常" << endl; return false; }
+	fs::path input_name_pcm_file = audioPath;
+	if (!fs::is_regular_file(input_name_pcm_file)) { std::cerr << input_name_pcm_file << "不是一个文件或文件不存在" << audioPath << endl;  return false; }
 
 
 	//打开输入文件
@@ -255,13 +255,13 @@ bool AudioAssistant::split_audio(const string&& audioPath, const int&& chanel)
 	return 0;
 }
 
-SplitAudio::SplitAudio(const fs::path files)
+SplitAudio::SplitAudio(const FileItem files)
 {
 	
-	if (filesystem::is_regular_file(files))
+	if (filesystem::is_regular_file(files.FilePath))
 	{
-		if (m_chanel > 16 || m_chanel <= 1) { throw "待拆分音频通道数异常"; }
-		m_input_file_queue.emplace(std::move(files));
+		if (files.Chanel > 16 || files.Chanel <= 1) { throw "待拆分音频通道数异常"; }
+		m_msg_queue.emplace(std::move(files));
 		
 		//申请缓存
 		{
@@ -271,15 +271,29 @@ SplitAudio::SplitAudio(const fs::path files)
 			}
 		}
 
-		m_working_thread = std::thread(&SplitAudio::working_proc(), this);
+		m_working_thread = std::thread(SplitAudio::working_proc(), this);
 	}
 	else {
 		cerr << "The input parameter is not a regular file" << endl;
 	}
 }
 
+SplitAudio::SplitAudio()
+{
+	//申请缓存
+	{
+		m_readpcm_buffer_common = make_unique<char[]>(audio_readsize_once);
+		if (!m_readpcm_buffer_common) {
+			throw "m_readpcm_buffer_common buffer allocated failed";
+		}
+	}
+	m_working_thread = thread(SplitAudio::working_proc(), this);
+}
+
+//队列应该马上能放进去，而不是在工作线程等待,放入的队列必须包含，文件路径，文件格式，音频路数
 bool SplitAudio::set_param(SplitAudioParam key, const string& value) 
 {
+	std::unique_lock<std::mutex> lock(m_mutex);
 	switch (key)
 	{
 	case SplitAudioParam::ResetOutputFolder: {
@@ -291,30 +305,26 @@ bool SplitAudio::set_param(SplitAudioParam key, const string& value)
 		LOG(WARNING) << "outputFolder set to " << value << " failed, input is not a folder";
 	}
 		break;
-	case SplitAudioParam::SetAudioFormat: {
-		return true;
-	}
-		break;
-	case SplitAudioParam::SetAudioChanel: {
-		const int temp_chanel = std::stoi(value);
-		if (temp_chanel > 0 && temp_chanel <= 32) {
-			m_chanel = temp_chanel;
-			LOG(INFO) << "AudioChanel is successly set to " << value;
-			return true;
-		}
-		LOG(INFO) << "AudioChanel set to " << value <<" failed";
-	}
-		break;
-	case SplitAudioParam::SetAudioName: {
-		if (fs::is_regular_file(value)) {
-			input_file = value;
-		}
-	}
 	default:
 		break;
 	}
 	return false;
 }
+
+bool SplitAudio::add_audio(FileItem item)
+{
+	if (!fs::is_regular_file(item.FilePath) || item.Chanel == 0 || item.FileFormat == "") {
+		LOG(ERROR) << item.FilePath.string() << " is not a regular file or other illegal input.";
+		return false;
+	}
+
+	{
+		std::unique_lock<std::mutex> lock(m_msg_mutex);
+		m_msg_queue.emplace(std::move(item));
+		m_msg_cond.notify_one();
+	}
+}
+
 
 void SplitAudio::working_proc()
 {
@@ -328,12 +338,22 @@ void SplitAudio::working_proc()
 
 
 		m_running = true;
-		if (m_input_file_queue.empty()) {
-			m_msg_cond.wait(lock);
+		if (m_msg_queue.empty()) {
+			m_msg_cond.wait(lock);//释放lock，并进入等待
 			continue;
 		}
-		const auto input_file = m_input_file_queue.front();
-		m_input_file_queue.pop();
+
+
+		fs::path input_file;
+		{
+			std::unique_lock<std::mutex> lock(m_msg_mutex);
+			auto msg_item = std::move(m_msg_queue.front());
+			input_file = msg_item.FilePath;
+			m_chanel = msg_item.Chanel;
+			m_msg_queue.pop();
+		}
+		
+		
 
 
 		{
@@ -343,13 +363,17 @@ void SplitAudio::working_proc()
 
 			//创建输出文件并打开
 			bool is_open_outputfile_success = true;
+			if (output_folder == "") { output_folder = input_file.parent_path(); }
 			for (int i = 0; i < m_chanel; i++)
 			{
-				std::string m_tmp = ast::utils::create_format_directory<true>(input_file.parent_path() / input_file.filename(), "splitOut", "spout" + std::to_string(i) + ".pcm");
+				std::string m_tmp = ast::utils::create_format_directory<true>(output_folder / input_file.filename(), "splitOut", "spout" + std::to_string(i) + ".pcm");
 				if (m_tmp != "") { mv_audio_pool.emplace_back(m_tmp); }
 				else { LOG(ERROR) << "some outputfile create failed "; reset(); is_open_outputfile_success = false;}
 			}
-			if (!is_open_outputfile_success)continue;
+			if (!is_open_outputfile_success) {
+				reset();
+				continue;
+			}
 
 			m_input_chanel = mv_audio_pool.size();
 			if (ast::utils::open_files(mv_audio_pool, v_ofs_handle) != 0) { 
@@ -387,8 +411,13 @@ void SplitAudio::reset()
 	mv_audio_pool.clear();
 	v_ofs_handle.clear();
 	m_input_chanel = 0;
+	output_folder == "";
 }
 
+SplitAudio::~SplitAudio()
+{
+	m_thread_exit = true;
+}
 
 //未完善
 bool AudioAssistant::cut_audio_timepoint(const string&& audioPath, const int&& chanel) {

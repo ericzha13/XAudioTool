@@ -41,7 +41,6 @@ int main(int argc, char** argv)
     {
         std::cout << "Hello World!\n";
         scope_delay_ms(1000);
-
 		
 		try
 		{
