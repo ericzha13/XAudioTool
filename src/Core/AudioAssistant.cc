@@ -344,7 +344,6 @@ void SplitAudio::working_proc()
 
 
 		m_running = true;
-
 		{
 			std::unique_lock<std::mutex> lock(m_msg_mutex);
 			if (m_msg_queue.empty()) {
@@ -380,7 +379,7 @@ void SplitAudio::working_proc()
 			{
 				std::string m_tmp = ast::utils::create_format_directory<true>(output_folder , input_file.stem().string(), "splitOut", "spout" + std::to_string(i) + ".pcm");
 				if (m_tmp != "") { mv_audio_pool.emplace_back(m_tmp); }
-				else { LOG(ERROR) << "some outputfile create failed , it shouldn't happen"; reset(); is_open_outputfile_success = false;}
+				else { LOG(ERROR) << "some outputfile create failed , it shouldn't happen"; is_open_outputfile_success = false;}
 			}
 			if (!is_open_outputfile_success) {
 				reset();
@@ -393,7 +392,6 @@ void SplitAudio::working_proc()
 				reset();
 				continue;
 			}
-
 
 			//处理音频
 			m_ifs.seekg(0, std::ios_base::beg);
@@ -423,7 +421,23 @@ void SplitAudio::reset()
 	mv_audio_pool.clear();
 	v_ofs_handle.clear();
 	m_input_chanel = 0;
-	output_folder == "";
+	output_folder = "";
+}
+
+void SplitAudio::clear_all()
+{
+	std::unique_lock<std::mutex> lock(m_msg_mutex);
+	//和空队列交换，实现清空
+	if (m_msg_queue.empty()) {
+		std::queue<FileItem> t;
+		m_msg_queue.swap(t);
+	}
+}
+
+void SplitAudio::stop()
+{
+	std::unique_lock<std::mutex> lock(m_mutex);
+	
 }
 
 SplitAudio::~SplitAudio()
@@ -498,6 +512,7 @@ bool AudioAssistant::cut_audio_timepoint(const std::string&& audioPath, const in
 //获取长短音频的位置，返回值是毫秒
 long FindAudioPosition::get_shortaudio_position()
 {
+	LogTraceFunction;
 	if (!is_init_success) return -1;
 	long accumulate_byte = 0;
 	long t = 0;
@@ -524,6 +539,7 @@ long FindAudioPosition::get_shortaudio_position()
 
 std::string FindAudioPosition::get_shortaudio_position_str()
 {
+	LogTraceFunction;
 	long posi_ms = get_shortaudio_position();
 
 
@@ -543,6 +559,7 @@ std::string FindAudioPosition::get_shortaudio_position_str()
 // 使用KMP算法在长音频中查找短音频的位置
 int FindAudioPosition::findSubsequence(const short* longAudio, const short* shortAudio) 
 {
+
 	int n = actual_longaudio_length_read / 2;
 	int m = actual_shortaudio_length_read / 2;
 
@@ -578,14 +595,15 @@ int FindAudioPosition::findSubsequence(const short* longAudio, const short* shor
 
 FindAudioPosition::FindAudioPosition(const fs::path short_path, const fs::path long_path)
 {
-	using namespace std;
-
+	LogTraceFunction;
+	std::unique_lock<std::mutex> lock(m_mutex);
 	//内存申请
 	{
 		//直接读取整条短音频。
 		m_short_audio_buffer = std::make_unique<char[]>(ShortAudioSize);
 		m_long_audio_buffer = std::make_unique<char[]>(LongAudioSize);
 		if (!m_short_audio_buffer || !m_long_audio_buffer) {
+			LOG(ERROR) << "m_short_audio_buffer buffer allocated failed";
 			throw "m_short_audio_buffer buffer allocated failed";
 		}
 	}
@@ -594,25 +612,75 @@ FindAudioPosition::FindAudioPosition(const fs::path short_path, const fs::path l
 	{
 		if (!fs::is_regular_file(short_path) || !fs::is_regular_file(long_path))
 		{
-			throw "input file is not exist[FindAudioPosition::FindAudioPosition]";
+			LOG(ERROR) << "input file is not exist";
+			throw "input file is not exist";
 		}
 
 		//打开长短音频
-		ifstream ifs_short_audio(short_path, ios_base::in | ios_base::binary);
-		ifs_long_audio.open(long_path, ios_base::in | ios_base::binary | ios_base::ate);
+		std::ifstream ifs_short_audio(short_path, std::ios_base::in | std::ios_base::binary);
+		ifs_long_audio.open(long_path, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
 		if (!ifs_short_audio.is_open() || !ifs_long_audio.is_open()) {
+			LOG(ERROR) << "audio open failed";
 			throw "audio open failed";
 		}
 
 		actual_shortaudio_length_read = ifs_short_audio.read(m_short_audio_buffer.get(), ShortAudioSize).gcount();
 		long_audio_total_size = ifs_long_audio.tellg();
-		ifs_long_audio.seekg(0,ios_base::beg);
+		ifs_long_audio.seekg(0, std::ios_base::beg);
+		ifs_short_audio.close();
 	}
 
 
 	is_init_success = true;
 }
 
+bool FindAudioPosition::set_long_audio_path(fs::path long_path)
+{
+	LogTraceFunction;
+	if (!fs::is_regular_file(long_path))
+	{
+		LOG(ERROR) << long_path << "is not a regular file";
+		return false;
+	}
+
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		ifs_long_audio.open(long_path, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
+		if (!ifs_long_audio.is_open()) {
+			LOG(ERROR) << long_path << " open failed";
+			return false;
+		}
+		long_audio_total_size = ifs_long_audio.tellg();
+		ifs_long_audio.seekg(0, std::ios_base::beg);
+	}
+
+	return true;
+}
+
+bool FindAudioPosition::set_short_audio_path(fs::path short_path)
+{
+	LogTraceFunction;
+	if (!fs::is_regular_file(short_path))
+	{
+		LOG(ERROR) << short_path << "is not a regular file";
+		return false;
+	}
+
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		std::ifstream ifs_short_audio(short_path, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
+		if (!ifs_short_audio.is_open()) {
+			LOG(ERROR) << short_path << " open failed";
+			return false;
+		}
+
+		std::fill(m_short_audio_buffer.get(), m_short_audio_buffer.get() + ShortAudioSize, 0);
+		actual_shortaudio_length_read = ifs_short_audio.read(m_short_audio_buffer.get(), ShortAudioSize).gcount();
+		ifs_short_audio.close();
+	}
+
+	return true;
+}
 
 CutOrLengthenAudio::CutOrLengthenAudio(const fs::path original_path, const int chanel)
 {

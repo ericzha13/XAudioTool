@@ -218,6 +218,8 @@ public:
 	CORE_API bool set_output_folder(const std::string& value);
 	CORE_API void reset_output_folder();
 	CORE_API bool add_audio(FileItem item);
+	CORE_API void stop();
+	CORE_API void clear_all();
 
 private:
 	void working_proc();
@@ -226,17 +228,13 @@ private:
 private:
 	std::unique_ptr<char[]> m_readpcm_buffer_common = nullptr;//一个智能指针，用于最开始申请公用的读数据缓存空间
 	std::vector<fs::path> mv_audio_pool;
-	int m_input_chanel;//待输入音频的数量
+	int m_input_chanel;//待输入音频的通道数
 	std::vector<std::ofstream> v_ofs_handle; //用于管理 ofstream 对象的 vector 容器
 	std::ifstream m_ifs;//输入文件描述符
 	int m_chanel = 2;
 	fs::path input_file;//当前在处理的文件名字
 	fs::path output_folder = "";
 	bool is_set_output_folder = false;
-	
-
-
-	std::queue<fs::path> m_input_file_queue;
 	
 	std::queue<FileItem> m_msg_queue;//存放用户的音频数据(文件位置、音频路数、格式等)
 	std::mutex m_msg_mutex;//为m_msg_queue队列设置的一个锁
@@ -268,8 +266,9 @@ public:
 	FindAudioPosition& operator=(const FindAudioPosition&) = delete;
 	FindAudioPosition& operator=(FindAudioPosition&&) = delete;
 
-	long get_shortaudio_position();//获取短音频在长音频的位置，返回值是毫秒，仅仅支持单通道
 	std::string get_shortaudio_position_str();
+	bool set_long_audio_path(fs::path long_path);
+	bool set_short_audio_path(fs::path short_path);
 
 
 private:
@@ -287,6 +286,9 @@ private:
 	long long_audio_total_size = 0;//长音频的总长度
 
 	bool m_has_found = false;
+
+	mutable std::mutex m_mutex;
+	long get_shortaudio_position();//获取短音频在长音频的位置，返回值是毫秒，仅仅支持单通道
 };
 
 
