@@ -69,8 +69,8 @@ public:
 
 	CORE_API bool split_audio(const std::string&& audioPath, const int&& chanel);
 
-	CORE_API bool set_target_path_or_file(const string&& str);
-	CORE_API bool cut_audio_timepoint(const string&& audioPath, const int&& chanel);
+	CORE_API bool set_target_path_or_file(const std::string&& str);
+	CORE_API bool cut_audio_timepoint(const std::string&& audioPath, const int&& chanel);
 
 	~AudioAssistant();
 
@@ -98,14 +98,6 @@ enum class MergeAudioParam
 	SetAudioFormat,//过滤设置的格式以外格式的音频。.pcm?.mp4？如果不设置那么默认合并输入的所有音频(不过滤)。
 };
 
-enum class SplitAudioParam
-{
-	ResetOutputFolder = 0,
-	SetAudioFormat,//过滤设置的格式以外格式的音频。.pcm?.mp4？如果不设置那么默认合并输入的所有音频(不过滤)。
-	SetAudioChanel,
-	SetAudioName,
-};
-
 //用于合并音频的类，初始化的时候支持传入多个音频文件或者传一个文件夹
 class MergeAudio
 {
@@ -119,7 +111,7 @@ public:
 
 	CORE_API MergeAudio(fs::path working_path, const char* extension = ".pcm");
 	CORE_API bool start_merge();//开始合并吧
-	CORE_API bool setparam(MergeAudioParam key, const string& value);
+	CORE_API bool setparam(MergeAudioParam key, const std::string& value);
 	CORE_API void clear_audio();
 
 	template <typename... Args>
@@ -207,25 +199,25 @@ private:
 */
 class SplitAudio
 {
-private:
+
+public:
 	struct FileItem {
 		fs::path FilePath = "";
 		unsigned int Chanel = 0;
 		std::string FileFormat = ".pcm";
 	};
-	std::queue<FileItem> m_msg_queue;
-public:
-	~SplitAudio();
-	SplitAudio();
-	SplitAudio(const FileItem files);
+	CORE_API ~SplitAudio();
+	CORE_API SplitAudio(void);
+	CORE_API SplitAudio(const FileItem files);
 
 	SplitAudio(const SplitAudio&) = delete;
 	SplitAudio(SplitAudio&&) = delete;
 	SplitAudio& operator=(const SplitAudio&) = delete;
 	SplitAudio& operator=(SplitAudio&&) = delete;
 
-	bool set_param(SplitAudioParam key,const string& value);
-	bool add_audio(FileItem item);
+	CORE_API bool set_output_folder(const std::string& value);
+	CORE_API void reset_output_folder();
+	CORE_API bool add_audio(FileItem item);
 
 private:
 	void working_proc();
@@ -236,14 +228,18 @@ private:
 	std::vector<fs::path> mv_audio_pool;
 	int m_input_chanel;//待输入音频的数量
 	std::vector<std::ofstream> v_ofs_handle; //用于管理 ofstream 对象的 vector 容器
-	ifstream m_ifs;//输入文件描述符
+	std::ifstream m_ifs;//输入文件描述符
 	int m_chanel = 2;
+	fs::path input_file;//当前在处理的文件名字
 	fs::path output_folder = "";
+	bool is_set_output_folder = false;
+	
 
 
 	std::queue<fs::path> m_input_file_queue;
 	
-	std::mutex m_msg_mutex;
+	std::queue<FileItem> m_msg_queue;//存放用户的音频数据(文件位置、音频路数、格式等)
+	std::mutex m_msg_mutex;//为m_msg_queue队列设置的一个锁
 	
 
 	
@@ -273,7 +269,7 @@ public:
 	FindAudioPosition& operator=(FindAudioPosition&&) = delete;
 
 	long get_shortaudio_position();//获取短音频在长音频的位置，返回值是毫秒，仅仅支持单通道
-	string get_shortaudio_position_str();
+	std::string get_shortaudio_position_str();
 
 
 private:
@@ -284,7 +280,7 @@ private:
 	constexpr static int ShortAudioSize = 3 * 32000;//短音频只读取3秒
 	int actual_shortaudio_length_read = 0;//实际读取到的短音频长度，一般小于等于ShortAudioSize
 
-	ifstream ifs_long_audio;
+	std::ifstream ifs_long_audio;
 	std::unique_ptr<char[]> m_long_audio_buffer = nullptr;
 	constexpr static int LongAudioSize = 30 * 1024 * 1024;//长音频每次读取30mb
 	int actual_longaudio_length_read = 0;//每次实际read长音频获得的字节
@@ -313,8 +309,8 @@ private:
 	bool is_init_success = false;
 
 	constexpr static int ReadAudioSize = 5 * 1024 * 1024;//音频每次读取5mb
-	ifstream ifs_original_audio;
-	ofstream ofs_output_audio;
+	std::ifstream ifs_original_audio;
+	std::ofstream ofs_output_audio;
 	std::unique_ptr<char[]> m_original_audio_buffer = nullptr;
 	long m_long_audio_total_size = 0;//长音频的总长度
 
