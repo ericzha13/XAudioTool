@@ -292,19 +292,21 @@ private:
 };
 
 
-//切音频的类，目前实现单通道音频的切分，多通道暂未实现
+//切音频的类，目前实现单通道音频的切分，需要支持多通道
 class CutOrLengthenAudio
 {
 public:
 	~CutOrLengthenAudio() = default;
 	CutOrLengthenAudio() = delete;
 	CutOrLengthenAudio(const fs::path original_path, int chanel = 1);
-	CutOrLengthenAudio(const FindAudioPosition&) = delete;
-	CutOrLengthenAudio(FindAudioPosition&&) = delete;
-	CutOrLengthenAudio& operator=(const FindAudioPosition&) = delete;
-	CutOrLengthenAudio& operator=(FindAudioPosition&&) = delete;
+	CutOrLengthenAudio(const CutOrLengthenAudio&) = delete;
+	CutOrLengthenAudio(CutOrLengthenAudio&&) = delete;
+	CutOrLengthenAudio& operator=(const CutOrLengthenAudio&) = delete;
+	CutOrLengthenAudio& operator=(CutOrLengthenAudio&&) = delete;
 
-	bool cut_op(const std::string& cut_time_str);
+	bool cut_and_save(const std::string& cut_time_str);
+	bool cut_to_buffer(const std::string& cut_time_str,const void* buffer_dst);
+	bool set_chanel(int chanel);
 
 
 private:
@@ -318,6 +320,7 @@ private:
 
 	bool get_start_and_end_ms(const std::string& time_str, long& start_ms, long& end_ms);
 	bool cut_op_main(const long start_byte, const long end_byte);
+	bool cut_op_main(const long start_byte, const long end_byte, char* dst_buffer,unsigned long dst_buffer_size);
 
 	int audio_chanel = 1;
 };
