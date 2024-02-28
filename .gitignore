@@ -1,2 +1,3 @@
-test_tool/test_win/x64
-src\Core\x64
+test_tool/test_win/x64/**
+test_tool/test_win/.vs/**
+src/Core/x64/**

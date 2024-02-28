@@ -296,17 +296,17 @@ private:
 class CutOrLengthenAudio
 {
 public:
-	~CutOrLengthenAudio() = default;
+	CORE_API ~CutOrLengthenAudio();
 	CutOrLengthenAudio() = delete;
-	CutOrLengthenAudio(const fs::path original_path, int chanel = 1);
+	CORE_API CutOrLengthenAudio(const fs::path original_path, int chanel = 1);
 	CutOrLengthenAudio(const CutOrLengthenAudio&) = delete;
 	CutOrLengthenAudio(CutOrLengthenAudio&&) = delete;
 	CutOrLengthenAudio& operator=(const CutOrLengthenAudio&) = delete;
 	CutOrLengthenAudio& operator=(CutOrLengthenAudio&&) = delete;
 
-	bool cut_and_save(const std::string& cut_time_str);
-	bool cut_to_buffer(const std::string& cut_time_str,const void* buffer_dst);
-	bool set_chanel(int chanel);
+	CORE_API bool cut_and_save(const std::string& cut_time_str);
+	CORE_API bool cut_to_buffer(const std::string& cut_time_str, void* buffer_dst, unsigned long buffer_dst_size);
+	//bool set_chanel(int chanel);
 
 
 private:
@@ -317,10 +317,12 @@ private:
 	std::ofstream ofs_output_audio;
 	std::unique_ptr<char[]> m_original_audio_buffer = nullptr;
 	long m_long_audio_total_size = 0;//长音频的总长度
+	fs::path m_original_path = "";
 
 	bool get_start_and_end_ms(const std::string& time_str, long& start_ms, long& end_ms);
 	bool cut_op_main(const long start_byte, const long end_byte);
-	bool cut_op_main(const long start_byte, const long end_byte, char* dst_buffer,unsigned long dst_buffer_size);
+	void cut_op_main(const long start_byte, const long end_byte, char* dst_buffer,unsigned long dst_buffer_size);
 
 	int audio_chanel = 1;
+	int bitrate_ms = 1 * 16000 * 2 / 1000;//每1ms的字节数
 };

@@ -697,13 +697,14 @@ CutOrLengthenAudio::CutOrLengthenAudio(const fs::path original_path, const int c
 			throw "input file chanel invalid[FindAudioPosition::FindAudioPosition]";
 		}
 		audio_chanel = chanel;
+
+		m_original_path = original_path;
 	}
 
 	//open input and target output file and get some file information
 	{
 		ifs_original_audio.open(original_path, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
-		ofs_output_audio.open(original_path.parent_path() / "cut_output_audio.pcm", std::ios_base::out | std::ios_base::binary);
-		if (!ifs_original_audio.is_open() || !ofs_output_audio.is_open()) {
+		if (!ifs_original_audio.is_open()) {
 			throw "audio open failed";
 		}
 		m_long_audio_total_size = ifs_original_audio.tellg();
@@ -724,19 +725,33 @@ bool CutOrLengthenAudio::cut_and_save(const std::string& cut_time_str)
 {
 	long start_byte = 0, end_byte = 0;
 	if (!get_start_and_end_ms(cut_time_str, start_byte, end_byte)) {
-		LOG(ERROR) << "Invalid time format";
+		LOG(ERROR) << "Invalid time format,get start byte and end byte from string failed";
 		return false;
 	}
 
+	if (m_long_audio_total_size < audio_chanel * end_byte * bitrate_ms
+		|| start_byte > end_byte
+		|| m_long_audio_total_size < audio_chanel * start_byte * bitrate_ms)
+	{
+		LOG(ERROR) << "The length of the audio to be captured exceeds the original audio length";
+		return false;
+	}
 
-	cut_op_main(start_byte * 32, end_byte * 32,true);
-
+	ofs_output_audio.open(m_original_path.parent_path() / (m_original_path.stem().string() + "_cut_output_audio.pcm"), std::ios_base::out | std::ios_base::binary);
+	
+	if (!ofs_output_audio.is_open()) {
+		fs::path temp_out = m_original_path.parent_path() / (m_original_path.stem().string() + "_cut_output_audio.pcm");
+		LOG(ERROR) << temp_out << " open failed, please check out the outputfile";
+		return false;
+	}
+	cut_op_main(start_byte * bitrate_ms, end_byte * bitrate_ms);
+	ofs_output_audio.close();
 	
 
 	return true;
 }
 
-bool CutOrLengthenAudio::cut_to_buffer(const std::string& cut_time_str, const void* buffer_dst)
+bool CutOrLengthenAudio::cut_to_buffer(const std::string& cut_time_str, void* buffer_dst,unsigned long buffer_dst_size)
 {
 	long start_byte = 0, end_byte = 0;
 	if (!get_start_and_end_ms(cut_time_str, start_byte, end_byte)) {
@@ -744,7 +759,16 @@ bool CutOrLengthenAudio::cut_to_buffer(const std::string& cut_time_str, const vo
 		return false;
 	}
 
+	if (m_long_audio_total_size < audio_chanel * end_byte * bitrate_ms
+		|| start_byte > end_byte 
+		|| m_long_audio_total_size < audio_chanel * start_byte * bitrate_ms
+		|| buffer_dst_size < audio_chanel*(end_byte - start_byte) * bitrate_ms)//用户数组如果无法容纳指定的长度，则直接报错，不处理。
+	{
+		LOG(ERROR) << "Invalid time_byte";
+		return false;
+	}
 
+	cut_op_main(start_byte * bitrate_ms, end_byte * bitrate_ms, static_cast<char*>(buffer_dst), buffer_dst_size);
 	return true;
 }
 
@@ -772,135 +796,64 @@ bool CutOrLengthenAudio::get_start_and_end_ms(const std::string& time_str, long&
 
 bool CutOrLengthenAudio::cut_op_main(const long start_byte,const long end_byte)
 {
-	if (m_long_audio_total_size < end_byte || start_byte > end_byte)
-	{
-		LOG(ERROR) << "Invalid time_byte";
-		return false;
-	}
-
 	long length = audio_chanel*(end_byte - start_byte);
 
-	if (audio_chanel == 1) {
-		ifs_original_audio.seekg(start_byte, std::ios_base::beg);
 
-		while (ifs_original_audio.peek() != EOF && length > 0) {
-			if (length < ReadAudioSize)
-			{
-				ifs_original_audio.read(m_original_audio_buffer.get(), length);
-				ofs_output_audio.write(m_original_audio_buffer.get(), length);
-				break;
-			}
-			else
-			{
-				int real_read_size = 0;
-				real_read_size = ifs_original_audio.read(m_original_audio_buffer.get(), ReadAudioSize).gcount();
-				ofs_output_audio.write(m_original_audio_buffer.get(), real_read_size);
-				length -= real_read_size;
+	ifs_original_audio.seekg(audio_chanel * start_byte, std::ios_base::beg);
+	unsigned long size_has_been_writed = 0;
+	while (length > size_has_been_writed) {
+		int real_read_size = 0;
+		real_read_size = ifs_original_audio.read(m_original_audio_buffer.get(), ReadAudioSize * audio_chanel).gcount();
 
-			}
+		if (length > real_read_size + size_has_been_writed)
+		{
+			ofs_output_audio.write(m_original_audio_buffer.get(), real_read_size);
 		}
-
-		ofs_output_audio.close();
-	}
-	else {//多通道
-		ifs_original_audio.seekg(start_byte * audio_chanel, std::ios_base::beg);
-		while (ifs_original_audio.peek() != EOF && length > 0) {
-			if (length < ReadAudioSize * audio_chanel)
-			{
-				ifs_original_audio.read(m_original_audio_buffer.get(), length);
-				ofs_output_audio.write(m_original_audio_buffer.get(), length);
-				break;
-			}
-			else
-			{
-				int real_read_size = 0;
-				real_read_size = ifs_original_audio.read(m_original_audio_buffer.get(), ReadAudioSize* audio_chanel).gcount();
-				ofs_output_audio.write(m_original_audio_buffer.get(), real_read_size);
-				length -= real_read_size;
-
-			}
+		else
+		{
+			ofs_output_audio.write(m_original_audio_buffer.get(), length - size_has_been_writed);
+			break;
 		}
-
-		ofs_output_audio.close();
 	}
 
-
-	
+	ofs_output_audio.close();
 	return true;
 }
 
-bool CutOrLengthenAudio::cut_op_main(const long start_byte, const long end_byte, char* dst_buffer, unsigned long dst_buffer_size)
+void CutOrLengthenAudio::cut_op_main(const long start_byte, const long end_byte, char* dst_buffer, unsigned long dst_buffer_size)
 {
-	if (m_long_audio_total_size < end_byte || start_byte > end_byte)
-	{
-		LOG(ERROR) << "Invalid time_byte";
-		return false;
-	}
 
 	long length = audio_chanel * (end_byte - start_byte);//待截取音频实际的字节大小
 	unsigned long size_has_been_readed = 0;
 
-	//用户传入的数组大小不够容纳下待截取音频的长度--->报警并直接把length改为和用户数组大小一致
-	if (length > dst_buffer_size) {
-		LOG(WARNING) << "xxxxxxxxxxxxxxxxxxxxxx";
-		length = dst_buffer_size;
-	}
 
-	if (audio_chanel == 1) {
-		ifs_original_audio.seekg(start_byte, std::ios_base::beg);
+	ifs_original_audio.seekg(start_byte * audio_chanel, std::ios_base::beg);
 
-		while (ifs_original_audio.peek() != EOF && length > 0 && size_has_been_readed >= length) {
+	while (size_has_been_readed < length) {
 
-				int real_read_size = 0; 
-				real_read_size = ifs_original_audio.read(m_original_audio_buffer.get(), ReadAudioSize).gcount();
-				if (length > real_read_size + size_has_been_readed 
-					&& dst_buffer_size > real_read_size + size_has_been_readed) {
-					//本次读取数据后，仍然没有取完待剪切音频长度，且此时用户数组空间能够容纳下所有所读的数据->读到多少数据，写入多少
-					std::memcpy(dst_buffer + size_has_been_readed, m_original_audio_buffer.get(), real_read_size);
-				}
-				else if (length < real_read_size + size_has_been_readed 
-					&& dst_buffer_size < real_read_size + size_has_been_readed) {
-					//本次读入的数据已经超过了需要截取的音频长度，并且本次读入的数据也无法完全容纳到用户数组
-					std::memcpy(dst_buffer + size_has_been_readed, m_original_audio_buffer.get(), dst_buffer_size - size_has_been_readed);
-					break;
-				}
-				else if (length < real_read_size + size_has_been_readed 
-					&& dst_buffer_size > real_read_size + size_has_been_readed) {
-					//本次读入的数据已经超过了需要截取的音频长度，并且本次读入的数据完全可以容纳到用户数组->用户数组足够大
-					std::memcpy(dst_buffer + size_has_been_readed, m_original_audio_buffer.get(), length - size_has_been_readed);
-					break;
-				}
-			
-		}
-
-		//ofs_output_audio.close();
-	}
-	else {//多通道
-		ifs_original_audio.seekg(start_byte * audio_chanel, std::ios_base::beg);
-		while (ifs_original_audio.peek() != EOF && length > 0) {
-			if (length < ReadAudioSize * audio_chanel)
-			{
-				ifs_original_audio.read(m_original_audio_buffer.get(), length);
-				//ofs_output_audio.write(m_original_audio_buffer.get(), length);
+			int real_read_size = 0; 
+			real_read_size = ifs_original_audio.read(m_original_audio_buffer.get(), ReadAudioSize* audio_chanel).gcount();
+			if (length > real_read_size + size_has_been_readed 
+				&& dst_buffer_size > real_read_size + size_has_been_readed) {
+				//本次读取数据后，仍然没有取完待剪切音频长度，且此时用户数组空间能够容纳下所有所读的数据->读到多少数据，写入多少
+				std::memcpy(dst_buffer + size_has_been_readed, m_original_audio_buffer.get(), real_read_size);
+				size_has_been_readed += real_read_size;
+			}
+			else if (length < real_read_size + size_has_been_readed) {
+				//本次读入的数据已经超过了需要截取的音频长度->填充数据到length长度
+				std::memcpy(dst_buffer + size_has_been_readed, m_original_audio_buffer.get(), length - size_has_been_readed);
 				break;
 			}
-			else
-			{
-				int real_read_size = 0;
-				real_read_size = ifs_original_audio.read(m_original_audio_buffer.get(), ReadAudioSize * audio_chanel).gcount();
-				//ofs_output_audio.write(m_original_audio_buffer.get(), real_read_size);
-				length -= real_read_size;
-
-			}
-		}
-
-		//ofs_output_audio.close();
+			
 	}
-
-
-
-	return true;
 }
+
+CutOrLengthenAudio::~CutOrLengthenAudio()
+{
+	ifs_original_audio.close();
+	ofs_output_audio.close();
+}
+
 
 
 bool MergeAudio::start_merge() {
