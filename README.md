@@ -29,7 +29,7 @@ git clone https://github.com/Microsoft/vcpkg.git
 vcpkg install glog ffmpeg
 ```
 
-4、将vcpkg继承到visual studio里
+4、将vcpkg集成到visual studio里
 
 ```shell
 vcpkg integrate install
